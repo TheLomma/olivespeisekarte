@@ -178,6 +178,8 @@ const CATEGORIES_DATA = [
   },
 ];
 
+const VERSION = "v2.2";
+
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
 const btnStyle = (extra = {}) => ({
@@ -724,6 +726,7 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
     orderReceived:"Ihre Bestellung wurde aufgenommen. Wir kümmern uns sofort darum.",
     back:"Zurück zur Karte", addBtn:"+ Bestellen", perPerson:"p.P.",
     restaurant:"Genussrestaurant", menu:"Speisekarte",
+    version:"v2.2",
     note:"Bei Unverträglichkeiten & Allergien sprechen Sie uns bitte an. Wir beraten Sie gerne. Preise enthalten die gesetzliche MwSt."
   };
 
@@ -796,11 +799,11 @@ _${new Date().toLocaleString("de-DE")}_`;
               <div style={{ fontSize:"clamp(18px,4vw,26px)", fontWeight:"bold", letterSpacing:"4px", color:TEXT, textTransform:"uppercase" }}>Hopmanns Olive</div>
               <div style={{ fontSize:"10px", letterSpacing:"3px", color:TEXTMUT, marginTop:"2px", textTransform:"uppercase" }}>{ui.menu}</div>
             </div>
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"8px", flexShrink:0 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+            <div style={{ display:"flex", flexShrink:0, gap:"8px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
               <button
                 onClick={() => setShowLastOrder(true)}
-                title="Bestellhistorie" style={{ display:"none" }}>
+                title="Bestellhistorie" style={{ display:"none" }} data-remove="true" style2={{display:"none"}}>
               </button>
               <button
                 onClick={callWaiter} style={{ display:"none" }}
@@ -866,7 +869,7 @@ _${new Date().toLocaleString("de-DE")}_`;
       </div>
 
       {/* CONTENT */}
-      <main style={{ maxWidth:"920px", margin:"0 auto", padding:"36px 20px 60px" }}>
+      <main style={{ maxWidth:"920px", margin:"0 auto", padding:"36px 20px 60px" /* CONTENT_START */ }}>
         <div style={{ marginBottom:"6px" }}>
           {cat.subtitle && <div style={{ fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase", color:GOLD, marginBottom:"4px" }}>{t(cat.subtitle, lang)}</div>}
           <div style={{ fontSize:"clamp(20px,4vw,28px)", fontWeight:"bold", letterSpacing:"3px", textTransform:"uppercase", color:TEXT }}>{t(cat.name, lang)}</div>
@@ -898,7 +901,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             </button>
           </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.1</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.2</div>
         </div>
       </main>
 
