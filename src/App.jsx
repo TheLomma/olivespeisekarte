@@ -109,9 +109,9 @@ const CATEGORIES_DATA = [
           { label:{ de:"300g", en:"300g", nl:"300g", tr:"300g" }, price:52.00 },
         ],
       },
-      { id:30, name:{ de:"Saucen je 3,50 \u20ac", en:"Sauces 3.50 \u20ac each", nl:"Sauzen per 3,50 \u20ac", tr:"Soslar 3,50 \u20ac" }, desc:{ de:"Gewürzbutter | Pfefferrahmsauce | BBQ-Jus | Sauce Béarnaise", en:"Spiced Butter | Pepper Cream Sauce | BBQ Jus | Béarnaise Sauce", nl:"Kruidenboter | Pepercreamsaus | BBQ-jus | Béarnaisesaus", tr:"Baharatlı Tereyağ | Biberli Krem Sos | BBQ Jus | Béarnaise Sos" }, sectionLabel:true },
-      { id:34, name:{ de:"Beilagen je 6,00 \u20ac", en:"Sides 6.00 \u20ac each", nl:"Bijgerechten per 6,00 \u20ac", tr:"Garnitürler 6,00 \u20ac" }, desc:{ de:"Belgische Pommes frites & Trüffelmayonnaise | Pflücksalat mit Hausdressing | Getrüffeltes Kartoffelpüree", en:"Belgian Fries & Truffle Mayonnaise | Green Salad with House Dressing | Truffled Mashed Potatoes", nl:"Belgische friet & truffelmayonaise | Pluksalade met huisdressing | Getruffelde aardappelpuree", tr:"Belçika Patatesi & Trüf Mayonezi | Karışık Salata | Trüflü Patates Püresi" }, sectionLabel:true },
-      { id:37, name:{ de:"Beilagen je 9,50 \u20ac", en:"Sides 9.50 \u20ac each", nl:"Bijgerechten per 9,50 \u20ac", tr:"Garnitürler 9,50 \u20ac" }, desc:{ de:"Genuss Pommes mit Trüffel & Parmesan", en:"Gourmet Fries with Truffle & Parmesan", nl:"Genietfriet met truffel & Parmezaan", tr:"Gurme Patates: Trüf & Parmesan" }, sectionLabel:true },
+      { id:30, name:{ de:"Saucen je 3,50 \u20ac", en:"Sauces 3.50 \u20ac each", nl:"Sauzen per 3,50 \u20ac", tr:"Soslar 3,50 \u20ac" }, price:3.50, checkboxGroup:true, options:{ de:["Gewürzbutter","Pfefferrahmsauce","BBQ-Jus","Sauce Béarnaise"], en:["Spiced Butter","Pepper Cream Sauce","BBQ Jus","Béarnaise Sauce"], nl:["Kruidenboter","Pepercreamsaus","BBQ-jus","Béarnaisesaus"], tr:["Baharatlı Tereyağ","Biberli Krem Sos","BBQ Jus","Béarnaise Sos"] } },
+      { id:34, name:{ de:"Beilagen je 6,00 \u20ac", en:"Sides 6.00 \u20ac each", nl:"Bijgerechten per 6,00 \u20ac", tr:"Garnitürler 6,00 \u20ac" }, price:6.00, checkboxGroup:true, options:{ de:["Belgische Pommes frites & Trüffelmayonnaise","Pflücksalat mit Hausdressing","Getrüffeltes Kartoffelpüree"], en:["Belgian Fries & Truffle Mayonnaise","Green Salad with House Dressing","Truffled Mashed Potatoes"], nl:["Belgische friet & truffelmayonaise","Pluksalade met huisdressing","Getruffelde aardappelpuree"], tr:["Belçika Patatesi & Trüf Mayonezi","Karışık Salata","Trüflü Patates Püresi"] } },
+      { id:37, name:{ de:"Beilagen je 9,50 \u20ac", en:"Sides 9.50 \u20ac each", nl:"Bijgerechten per 9,50 \u20ac", tr:"Garnitürler 9,50 \u20ac" }, price:9.50, checkboxGroup:true, options:{ de:["Genuss Pommes mit Trüffel & Parmesan"], en:["Gourmet Fries with Truffle & Parmesan"], nl:["Genietfriet met truffel & Parmezaan"], tr:["Gurme Patates: Trüf & Parmesan"] } },
     ],
   },
   {
@@ -198,6 +198,65 @@ const VariantSelector = ({ variants, selected, onSelect, perPerson, lang, ui }) 
 
 const MenuItem = ({ item, onAdd, lang, ui }) => {
   const [selectedVariant, setSelectedVariant] = useState(0);
+  const [extraChecked, setExtraChecked] = useState(false);
+  const [checkedOptions, setCheckedOptions] = useState([]);
+
+  const toggleOption = (opt) => {
+    setCheckedOptions(prev =>
+      prev.includes(opt) ? prev.filter(o => o !== opt) : [...prev, opt]
+    );
+  };
+
+  if (item.checkboxGroup) {
+    const opts = item.options ? (item.options[lang] || item.options["de"] || []) : [];
+    return (
+      <div style={{ marginBottom:"14px", paddingTop:"4px" }}>
+        <div style={{ fontSize:"12px", fontWeight:"bold", color:GOLD, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:"8px" }}>{t(item.name, lang)}</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:"6px" }}>
+          {opts.map((opt, i) => {
+            const key = item.id + "-" + i;
+            const checked = checkedOptions.includes(key);
+            return (
+              <label key={key} style={{ display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" }}>
+                <div
+                  onClick={() => toggleOption(key)}
+                  style={{
+                    width:"16px", height:"16px", border:`1px solid ${checked ? GOLD : BG3}`,
+                    background: checked ? `${GOLD}33` : "transparent",
+                    borderRadius:"2px", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                    cursor:"pointer", transition:"all .2s"
+                  }}
+                >
+                  {checked && <span style={{ color:GOLD, fontSize:"11px", lineHeight:1 }}>✓</span>}
+                </div>
+                <span
+                  onClick={() => toggleOption(key)}
+                  style={{ fontSize:"13px", color: checked ? TEXT : TEXTMUT, lineHeight:1.5, transition:"color .2s" }}
+                >{opt}</span>
+                <span style={{ marginLeft:"auto", color:GOLD, fontSize:"12px", fontWeight:"bold", whiteSpace:"nowrap" }}>{fmt(item.price)}</span>
+              </label>
+            );
+          })}
+        </div>
+        {checkedOptions.filter(k => k.startsWith(item.id + "-")).length > 0 && (
+          <button
+            style={btnStyle({ marginTop:"10px", fontSize:"11px" })}
+            onMouseEnter={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; }}
+            onClick={() => {
+              checkedOptions.filter(k => k.startsWith(item.id + "-")).forEach(k => {
+                const idx = parseInt(k.split("-")[1]);
+                onAdd({ id: item.id + "-" + idx, name: `${t(item.name, lang)}: ${opts[idx]}`, price: item.price });
+              });
+              setCheckedOptions(prev => prev.filter(k => !k.startsWith(item.id + "-")));
+            }}
+          >
+            {ui.addBtn}
+          </button>
+        )}
+      </div>
+    );
+  }
 
   if (item.sectionLabel) return (
     <div style={{ marginBottom:"14px", paddingTop:"4px" }}>
@@ -216,6 +275,10 @@ const MenuItem = ({ item, onAdd, lang, ui }) => {
       price: currentPrice,
       name: hasVariants ? `${t(item.name, lang)} (${currentLabel})` : t(item.name, lang),
     });
+    if (item.extra && extraChecked) {
+      onAdd({ id: item.id + "-extra", name: `Weinbegleitung (${t(item.name, lang)})`, price: 40.00 });
+      setExtraChecked(false);
+    }
   };
 
   return (
@@ -254,7 +317,14 @@ const MenuItem = ({ item, onAdd, lang, ui }) => {
       )}
 
       {item.extra && (
-        <div style={{ fontSize:"12px", color:GOLDLT, marginTop:"4px", fontStyle:"italic" }}>{t(item.extra, lang)}</div>
+        <div style={{ marginTop:"10px" }}>
+          <label style={{ display:"flex", alignItems:"center", gap:"10px", cursor:"pointer" }}>
+            <div onClick={() => setExtraChecked(v => !v)} style={{ width:"16px", height:"16px", border:`1px solid ${extraChecked ? GOLD : BG3}`, background: extraChecked ? `${GOLD}33` : "transparent", borderRadius:"2px", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all .2s" }}>
+              {extraChecked && <span style={{ color:GOLD, fontSize:"11px", lineHeight:1 }}>✓</span>}
+            </div>
+            <span onClick={() => setExtraChecked(v => !v)} style={{ fontSize:"12px", color: extraChecked ? GOLDLT : TEXTMUT, fontStyle:"italic", lineHeight:1.5, transition:"color .2s" }}>{t(item.extra, lang)}</span>
+          </label>
+        </div>
       )}
 
       <button
@@ -429,7 +499,7 @@ export default function App() {
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.0</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.1</div>
         </div>
       </main>
 
