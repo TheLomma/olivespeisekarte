@@ -505,6 +505,49 @@ const TelegramSettings = ({ onClose }) => {
   );
 };
 
+const LastOrderModal = ({ onClose }) => {
+  const raw = localStorage.getItem("last_order");
+  const data = raw ? JSON.parse(raw) : null;
+  const total = data ? data.items.reduce((s, i) => s + (i.price || 0) * i.qty, 0) : 0;
+  const timeStr = data ? new Date(data.time).toLocaleString("de-DE") : "";
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:100, background:"rgba(0,0,0,0.82)", display:"flex", alignItems:"flex-end", justifyContent:"center" }} onClick={onClose}>
+      <div style={{ background:BG2, width:"100%", maxWidth:"560px", borderRadius:"16px 16px 0 0", padding:"28px 24px", maxHeight:"80vh", display:"flex", flexDirection:"column", fontFamily:"Georgia,serif", border:`1px solid ${BG3}`, borderBottom:"none" }} onClick={e => e.stopPropagation()}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
+          <div>
+            <div style={{ fontSize:"11px", letterSpacing:"3px", textTransform:"uppercase", color:GOLD, marginBottom:"2px" }}>Letzte Bestellung</div>
+            {data && <div style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic" }}>{timeStr}{data.table ? ` · Tisch ${data.table}` : ""}</div>}
+          </div>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:"22px", color:TEXTMUT, cursor:"pointer" }}>×</button>
+        </div>
+        <GoldDivider/>
+        {!data
+          ? <p style={{ color:TEXTMUT, textAlign:"center", padding:"32px 0", fontStyle:"italic" }}>Noch keine Bestellung aufgegeben.</p>
+          : <>
+              <div style={{ overflowY:"auto", flex:1 }}>
+                {data.items.map((item, idx) => (
+                  <div key={idx} style={{ display:"flex", alignItems:"center", padding:"12px 0", borderBottom:`1px solid ${BG3}`, gap:"12px" }}>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:"bold", color:TEXT, fontSize:"14px" }}>{item.name}</div>
+                      <div style={{ color:TEXTMUT, fontSize:"12px", marginTop:"2px" }}>{item.qty} × {fmt(item.price || 0)}</div>
+                    </div>
+                    <div style={{ fontWeight:"bold", color:GOLD, fontSize:"15px" }}>{fmt((item.price || 0) * item.qty)}</div>
+                  </div>
+                ))}
+              </div>
+              <GoldDivider/>
+              <div style={{ display:"flex", justifyContent:"space-between", fontWeight:"bold", fontSize:"18px", color:TEXT, marginBottom:"20px" }}>
+                <span>Gesamt</span><span style={{ color:GOLD }}>{fmt(total)}</span>
+              </div>
+            </>
+        }
+        <button onClick={onClose} style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"2px", padding:"12px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px" }}>Schließen</button>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   useEffect(() => {
     // Viewport-Meta für korrekte mobile Darstellung
@@ -545,6 +588,7 @@ export default function App() {
   const [showTablePicker, setShowTablePicker] = useState(false);
   const [showCart, setShowCart] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showLastOrder, setShowLastOrder] = useState(false);
 
   const ui = {
     cart:"Warenkorb", order:"Bestellung", empty:"Ihr Warenkorb ist leer.", total:"Gesamt",
@@ -592,7 +636,9 @@ _${new Date().toLocaleString("de-DE")}_`;
   };
 
   const handleOrder = () => {
-    sendToTelegram(cart);
+    const snapshot = cart.map(i => ({ ...i }));
+    sendToTelegram(snapshot);
+    localStorage.setItem("last_order", JSON.stringify({ items: snapshot, time: new Date().toISOString(), table: tableNumber }));
     setShowCart(false);
     setShowSuccess(true);
     setCart([]);
@@ -613,6 +659,14 @@ _${new Date().toLocaleString("de-DE")}_`;
               <div style={{ fontSize:"10px", letterSpacing:"3px", color:TEXTMUT, marginTop:"2px", textTransform:"uppercase" }}>{ui.menu}</div>
             </div>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"8px", flexShrink:0 }}>
+              <button
+                onClick={() => setShowLastOrder(true)}
+                style={btnStyle({ fontSize:"10px", padding:"5px 12px" })}
+                onMouseEnter={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; }}
+              >
+                ↻ Letzte Bestellung
+              </button>
               <button
                 onClick={() => setShowCart(true)}
                 style={{ ...btnStyle(), position:"relative", padding:"8px 14px", display:"flex", alignItems:"center", gap:"8px" }}
@@ -677,7 +731,7 @@ _${new Date().toLocaleString("de-DE")}_`;
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.4</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.5</div>
         </div>
       </main>
 
@@ -685,6 +739,7 @@ _${new Date().toLocaleString("de-DE")}_`;
       {showSuccess && <OrderSuccess onClose={() => setShowSuccess(false)} ui={ui}/>}
       {showTgSettings && <TelegramSettings onClose={() => { setShowTgSettings(false); const t = parseInt(localStorage.getItem("tg_table")); if (t) setTableNumber(t); }}/>}
       {showTablePicker && <TablePicker current={tableNumber} onSelect={setTableNumber} onClose={() => setShowTablePicker(false)}/>}
+      {showLastOrder && <LastOrderModal onClose={() => setShowLastOrder(false)} />}
     </div>
   );
 }
