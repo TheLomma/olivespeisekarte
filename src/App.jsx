@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v2.6";
+const VERSION = "v2.7";
 
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
@@ -468,7 +468,7 @@ const TablePicker = ({ current, onSelect, onClose }) => (
   </div>
 );
 
-const TelegramSettings = ({ onClose }) => {
+const TelegramSettings = ({ onClose, onOpenServiceMode }) => {
   const [botToken, setBotToken] = useState(localStorage.getItem("tg_token") || "8556873591:AAEtuYkA6tO3i4W-AGbiQKDRL7mVk6Kah34");
   const [chatId, setChatId] = useState(localStorage.getItem("tg_chatid") || "8792112920");
   const [saved, setSaved] = useState(false);
@@ -590,6 +590,203 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
         >
           {testStatus === "sending" ? "⏳ Sende …" : testStatus === "ok" ? "✅ Erfolgreich gesendet!" : testStatus === "error" ? "❌ Fehler – Token/Chat-ID prüfen" : "📡 Testverbindung senden"}
         </button>
+        <button
+          onClick={() => { onClose(); onOpenServiceMode && onOpenServiceMode(); }}
+          style={{ marginTop:"10px", width:"100%", background:"transparent", color:GOLD, border:`1px solid ${GOLD}`, borderRadius:"2px", padding:"11px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px" }}
+        >
+          🍽 Service-Modus öffnen
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const ServiceMode = ({ onClose }) => {
+  const GANG_CATS = [
+    { id:"vorspeisen", label:"Vorspeise" },
+    { id:"hauptspeisen", label:"Hauptgericht" },
+    { id:"dessert", label:"Dessert" },
+    { id:"menues", label:"Menü" },
+  ];
+  const [table, setTable] = useState("");
+  const [seats, setSeats] = useState([{ id: 1, courses: [] }]);
+  const [sendStatus, setSendStatus] = useState("");
+
+  const addSeat = () => setSeats(prev => [...prev, { id: prev.length + 1, courses: [] }]);
+  const removeSeat = idx => setSeats(prev => prev.filter((_, i) => i !== idx));
+
+  const addCourse = (seatIdx, catId) => {
+    setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : {
+      ...s,
+      courses: [...s.courses, { catId, item: null, variant: 0, note: "" }]
+    }));
+  };
+
+  const removeCourse = (seatIdx, courseIdx) => {
+    setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : {
+      ...s,
+      courses: s.courses.filter((_, ci) => ci !== courseIdx)
+    }));
+  };
+
+  const updateCourse = (seatIdx, courseIdx, patch) => {
+    setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : {
+      ...s,
+      courses: s.courses.map((c, ci) => ci !== courseIdx ? c : { ...c, ...patch })
+    }));
+  };
+
+  const getItems = (catId) => CATEGORIES_DATA.find(c => c.id === catId)?.items.filter(it => !it.checkboxGroup && !it.sectionLabel) || [];
+
+  const sendOrder = async () => {
+    if (!table) { setSendStatus("notable"); setTimeout(() => setSendStatus(""), 3000); return; }
+    const token = localStorage.getItem("tg_token") || "";
+    const chatId = localStorage.getItem("tg_chatid") || "";
+    setSendStatus("sending");
+    const lines = seats.map(s => {
+      if (!s.courses.length) return `Platz ${s.id}: – (kein Gericht gewählt)`;
+      const courseLines = s.courses.map(c => {
+        const gangLabel = GANG_CATS.find(g => g.id === c.catId)?.label || c.catId;
+        if (!c.item) return `    [${gangLabel}]: – (kein Gericht)`;
+        const item = CATEGORIES_DATA.flatMap(cat => cat.items).find(it => it.id === c.item);
+        if (!item) return `    [${gangLabel}]: – (unbekannt)`;
+        const name = item.name?.de || item.name || "";
+        const varLabel = item.variants ? (item.variants[c.variant]?.label?.de || "") : "";
+        const price = item.variants ? item.variants[c.variant]?.price : item.price;
+        const noteStr = c.note ? ` [${c.note}]` : "";
+        return `    [${gangLabel}] ${name}${varLabel ? " – " + varLabel : ""}${noteStr} · ${fmt(price || 0)}`;
+      }).join("\n");
+      return `Platz ${s.id}:
+${courseLines}`;
+    }).join("\n\n");
+    const msg = `🍽 *Service-Bestellung – Tisch ${table}*
+
+${lines}
+
+_${new Date().toLocaleString("de-DE")}_`;
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: "Markdown" }),
+      });
+      const json = await res.json();
+      setSendStatus(json.ok ? "ok" : "error");
+    } catch(e) { setSendStatus("error"); }
+    setTimeout(() => setSendStatus(""), 3000);
+  };
+
+  const fieldStyle = { width:"100%", background:BG, border:`1px solid ${BG3}`, borderRadius:"2px", color:TEXT, fontFamily:"Georgia,serif", fontSize:"13px", padding:"8px 10px", outline:"none", boxSizing:"border-box" };
+  const labelStyle = { fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"4px", display:"block" };
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:100, background:BG, display:"flex", flexDirection:"column", overflowY:"auto" }} onClick={onClose}>
+      <div style={{ width:"100%", maxWidth:"760px", margin:"0 auto", padding:"28px 24px 80px", boxSizing:"border-box", fontFamily:"Georgia,serif" }} onClick={e => e.stopPropagation()}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
+          <div>
+            <div style={{ fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase", color:GOLD, marginBottom:"2px" }}>Service-Modus</div>
+            <div style={{ fontSize:"20px", fontWeight:"bold", color:TEXT }}>Bestellung aufnehmen</div>
+          </div>
+          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:"22px", color:TEXTMUT, cursor:"pointer" }}>×</button>
+        </div>
+        <GoldDivider/>
+
+        {/* Tischnummer */}
+        <div style={{ marginBottom:"24px" }}>
+          <label style={labelStyle}>Tischnummer</label>
+          <div style={{ display:"flex", gap:"8px", flexWrap:"wrap" }}>
+            {[1,2,3,4,5,6,7,8,9,10].map(n => (
+              <button key={n} onClick={() => setTable(n)}
+                style={{ padding:"10px 14px", borderRadius:"2px", border:`1px solid ${table===n ? GOLD : BG3}`, background: table===n ? `${GOLD}33` : "transparent", color: table===n ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"15px", fontWeight:"bold", cursor:"pointer", transition:"all .2s" }}
+              >{n}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Plätze */}
+        {seats.map((seat, seatIdx) => (
+          <div key={seat.id} style={{ background:BG, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"18px", marginBottom:"16px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
+              <div style={{ fontSize:"14px", fontWeight:"bold", color:GOLD, letterSpacing:"1px" }}>Platz {seat.id}</div>
+              {seats.length > 1 && (
+                <button onClick={() => removeSeat(seatIdx)} style={{ background:"transparent", border:`1px solid ${BG3}`, color:TEXTMUT, borderRadius:"2px", padding:"3px 10px", fontSize:"12px", cursor:"pointer", fontFamily:"Georgia,serif" }}>✕ entfernen</button>
+              )}
+            </div>
+
+            {/* Gänge dieses Platzes */}
+            {seat.courses.map((course, courseIdx) => {
+              const gangLabel = GANG_CATS.find(g => g.id === course.catId)?.label || course.catId;
+              const items = getItems(course.catId);
+              const selItem = items.find(it => it.id === course.item);
+              return (
+                <div key={courseIdx} style={{ background:BG2, border:`1px solid ${BG3}`, borderRadius:"3px", padding:"12px 14px", marginBottom:"10px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
+                    <span style={{ fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:GOLDLT }}>{gangLabel}</span>
+                    <button onClick={() => removeCourse(seatIdx, courseIdx)} style={{ background:"transparent", border:"none", color:TEXTMUT, fontSize:"16px", cursor:"pointer", lineHeight:1 }}>×</button>
+                  </div>
+
+                  {/* Gericht */}
+                  <div style={{ marginBottom:"8px" }}>
+                    <select value={course.item || ""} onChange={e => updateCourse(seatIdx, courseIdx, { item: parseInt(e.target.value) || null, variant: 0 })}
+                      style={{ ...fieldStyle, cursor:"pointer" }}>
+                      <option value="">– Gericht wählen –</option>
+                      {items.map(it => (
+                        <option key={it.id} value={it.id}>{it.name?.de || it.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Variante */}
+                  {selItem?.variants && (
+                    <div style={{ display:"flex", gap:"6px", flexWrap:"wrap", marginBottom:"8px" }}>
+                      {selItem.variants.map((v, vi) => (
+                        <button key={vi} onClick={() => updateCourse(seatIdx, courseIdx, { variant: vi })}
+                          style={{ padding:"5px 10px", borderRadius:"2px", border:`1px solid ${course.variant===vi ? GOLD : BG3}`, background: course.variant===vi ? `${GOLD}22` : "transparent", color: course.variant===vi ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", transition:"all .2s" }}
+                        >{v.label?.de} · {fmt(v.price)}</button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Sonderwunsch */}
+                  {course.item && (
+                    <input type="text" value={course.note} onChange={e => updateCourse(seatIdx, courseIdx, { note: e.target.value })}
+                      placeholder="Sonderwunsch (optional) …"
+                      style={{ ...fieldStyle, fontStyle: course.note ? "normal" : "italic", fontSize:"12px" }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+
+            {/* Gang hinzufügen Buttons */}
+            <div style={{ marginTop:"10px" }}>
+              <div style={{ fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"8px" }}>Gang hinzufügen</div>
+              <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
+                {GANG_CATS.map(g => (
+                  <button key={g.id} onClick={() => addCourse(seatIdx, g.id)}
+                    style={{ padding:"6px 12px", borderRadius:"2px", border:`1px dashed ${BG3}`, background:"transparent", color:TEXTMUT, fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", transition:"all .2s", letterSpacing:"0.5px" }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.color = GOLD; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = BG3; e.currentTarget.style.color = TEXTMUT; }}
+                  >+ {g.label}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {/* Weiteren Platz */}
+        <button onClick={addSeat}
+          style={{ width:"100%", background:"transparent", border:`1px dashed ${BG3}`, color:TEXTMUT, borderRadius:"2px", padding:"12px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px", marginBottom:"20px" }}
+        >+ Weiteren Platz hinzufügen</button>
+
+        <GoldDivider/>
+
+        <button onClick={sendOrder}
+          style={{ width:"100%", background: sendStatus==="ok" ? "#2d6a2d" : sendStatus==="error" ? "#6a2d2d" : GOLD, color: sendStatus ? TEXT : BG, border:"none", borderRadius:"2px", padding:"14px", fontSize:"14px", fontFamily:"Georgia,serif", letterSpacing:"2px", textTransform:"uppercase", fontWeight:"bold", cursor:"pointer", transition:"all .3s", marginBottom:"10px" }}
+        >
+          {sendStatus==="sending" ? "⏳ Sende …" : sendStatus==="ok" ? "✅ Bestellung gesendet!" : sendStatus==="error" ? "❌ Fehler – Einstellungen prüfen" : sendStatus==="notable" ? "⚠️ Tisch wählen!" : "📨 Bestellung abschicken"}
+        </button>
+        <button onClick={onClose} style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"2px", padding:"12px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px" }}>Schließen</button>
       </div>
     </div>
   );
@@ -676,6 +873,7 @@ export default function App() {
   };
   const [activeCat, setActiveCat] = useState(CATEGORIES_DATA[0].id);
   const [showTgSettings, setShowTgSettings] = useState(false);
+  const [showServiceMode, setShowServiceMode] = useState(false);
   const [logoClicks, setLogoClicks] = useState(0);
   const logoClickTimer = React.useRef(null);
 
@@ -749,7 +947,7 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
     orderReceived:"Ihre Bestellung wurde aufgenommen. Wir kümmern uns sofort darum.",
     back:"Zurück zur Karte", addBtn:"+ Bestellen", perPerson:"p.P.",
     restaurant:"Genussrestaurant", menu:"Speisekarte",
-    version:"v2.6",
+    version:"v2.7",
     note:"Bei Unverträglichkeiten & Allergien sprechen Sie uns bitte an. Wir beraten Sie gerne. Preise enthalten die gesetzliche MwSt."
   };
 
@@ -938,15 +1136,16 @@ _${new Date().toLocaleString("de-DE")}_`;
             </button>
           </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.6</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.7</div>
         </div>
       </main>
 
       {showCart && <Cart cart={cart} onRemove={removeFromCart} onChangeQty={changeQty} onClose={() => setShowCart(false)} onOrder={handleOrder} onNoteChange={setOrderNote} note={orderNote} ui={ui}/>}
       {showSuccess && <OrderSuccess onClose={() => setShowSuccess(false)} ui={ui}/>}
-      {showTgSettings && <TelegramSettings onClose={() => { setShowTgSettings(false); const t = parseInt(localStorage.getItem("tg_table")); if (t) setTableNumber(t); }}/>}
+      {showTgSettings && <TelegramSettings onOpenServiceMode={() => setShowServiceMode(true)} onClose={() => { setShowTgSettings(false); const t = parseInt(localStorage.getItem("tg_table")); if (t) setTableNumber(t); }}/>}
       {showTablePicker && <TablePicker current={tableNumber} onSelect={setTableNumber} onClose={() => setShowTablePicker(false)}/>}
       {showLastOrder && <LastOrderModal onClose={() => setShowLastOrder(false)} />}
+        {showServiceMode && <ServiceMode onClose={() => setShowServiceMode(false)} />}
     </div>
   );
 }
