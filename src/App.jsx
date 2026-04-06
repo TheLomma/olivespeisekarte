@@ -518,8 +518,10 @@ const TelegramSettings = ({ onClose }) => {
 };
 
 const LastOrderModal = ({ onClose }) => {
-  const raw = localStorage.getItem("last_order");
-  const data = raw ? JSON.parse(raw) : null;
+  const raw = localStorage.getItem("order_history");
+  const history = raw ? JSON.parse(raw) : [];
+  const [selected, setSelected] = React.useState(0);
+  const data = history[selected] || null;
   const total = data ? data.items.reduce((s, i) => s + (i.price || 0) * i.qty, 0) : 0;
   const timeStr = data ? new Date(data.time).toLocaleString("de-DE") : "";
 
@@ -533,6 +535,15 @@ const LastOrderModal = ({ onClose }) => {
           </div>
           <button onClick={onClose} style={{ background:"none", border:"none", fontSize:"22px", color:TEXTMUT, cursor:"pointer" }}>×</button>
         </div>
+        {history.length > 1 && (
+          <div style={{ display:"flex", gap:"6px", marginBottom:"14px", flexWrap:"wrap" }}>
+            {history.map((h, i) => (
+              <button key={i} onClick={() => setSelected(i)} style={{ padding:"4px 10px", borderRadius:"2px", border:`1px solid ${selected===i ? GOLD : BG3}`, background: selected===i ? `${GOLD}22` : "transparent", color: selected===i ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"11px", cursor:"pointer" }}>
+                {i === 0 ? "Letzte" : `#${history.length - i}`}
+              </button>
+            ))}
+          </div>
+        )}
         <GoldDivider/>
         {!data
           ? <p style={{ color:TEXTMUT, textAlign:"center", padding:"32px 0", fontStyle:"italic" }}>Noch keine Bestellung aufgegeben.</p>
@@ -548,6 +559,7 @@ const LastOrderModal = ({ onClose }) => {
                   </div>
                 ))}
               </div>
+              {data.note && <div style={{ margin:"12px 0", padding:"10px 12px", background:BG, borderRadius:"2px", fontSize:"13px", color:TEXTMUT, fontStyle:"italic" }}>📝 {data.note}</div>}
               <GoldDivider/>
               <div style={{ display:"flex", justifyContent:"space-between", fontWeight:"bold", fontSize:"18px", color:TEXT, marginBottom:"20px" }}>
                 <span>Gesamt</span><span style={{ color:GOLD }}>{fmt(total)}</span>
@@ -657,7 +669,10 @@ _${new Date().toLocaleString("de-DE")}_`;
   const handleOrder = () => {
     const snapshot = cart.map(i => ({ ...i }));
     sendToTelegram(snapshot);
-    localStorage.setItem("last_order", JSON.stringify({ items: snapshot, time: new Date().toISOString(), table: tableNumber }));
+    const newEntry = { items: snapshot, time: new Date().toISOString(), table: tableNumber, note: orderNote };
+    const prevHistory = JSON.parse(localStorage.getItem("order_history") || "[]");
+    const updatedHistory = [newEntry, ...prevHistory].slice(0, 5);
+    localStorage.setItem("order_history", JSON.stringify(updatedHistory));
     setShowCart(false);
     setShowSuccess(true);
     setCart([]);
@@ -751,7 +766,7 @@ _${new Date().toLocaleString("de-DE")}_`;
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.7</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.8</div>
         </div>
       </main>
 
