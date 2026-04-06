@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
 // ── TRANSLATIONS ──────────────────────────────────────────────
 // (legacy data removed – using CATEGORIES_DATA below)
@@ -393,9 +393,90 @@ const OrderSuccess = ({ onClose, ui }) => (
 );
 
 
+const TelegramSettings = ({ onClose }) => {
+  const [botToken, setBotToken] = useState(localStorage.getItem("tg_token") || "8556873591:AAEtuYkA6tO3i4W-AGbiQKDRL7mVk6Kah34");
+  const [chatId, setChatId] = useState(localStorage.getItem("tg_chatid") || "8792112920");
+  const [saved, setSaved] = useState(false);
+
+  const save = () => {
+    localStorage.setItem("tg_token", botToken.trim());
+    localStorage.setItem("tg_chatid", chatId.trim());
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const fieldStyle = {
+    width:"100%", background:BG, border:`1px solid ${BG3}`, borderRadius:"2px",
+    color:TEXT, fontFamily:"Georgia,serif", fontSize:"13px", padding:"10px 12px",
+    outline:"none", boxSizing:"border-box", marginTop:"6px",
+  };
+  const labelStyle = { fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT };
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:100, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
+      <div style={{ background:BG2, border:`1px solid ${GOLD}`, borderRadius:"4px", padding:"36px 32px", width:"90%", maxWidth:"420px", fontFamily:"Georgia,serif" }} onClick={e => e.stopPropagation()}>
+        <div style={{ fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase", color:GOLD, marginBottom:"4px" }}>Einstellungen</div>
+        <div style={{ fontSize:"20px", fontWeight:"bold", color:TEXT, marginBottom:"6px" }}>Telegram</div>
+        <GoldDivider/>
+        <div style={{ marginBottom:"18px" }}>
+          <div style={labelStyle}>Bot Token</div>
+          <input
+            type="password"
+            value={botToken}
+            onChange={e => setBotToken(e.target.value)}
+            placeholder="123456789:ABCdef..."
+            style={fieldStyle}
+          />
+          <div style={{ fontSize:"11px", color:TEXTMUT, marginTop:"4px", fontStyle:"italic" }}>Erhalten via @BotFather auf Telegram</div>
+        </div>
+        <div style={{ marginBottom:"24px" }}>
+          <div style={labelStyle}>Chat ID</div>
+          <input
+            type="password"
+            value={chatId}
+            onChange={e => setChatId(e.target.value)}
+            placeholder="-100123456789"
+            style={fieldStyle}
+          />
+          <div style={{ fontSize:"11px", color:TEXTMUT, marginTop:"4px", fontStyle:"italic" }}>Gruppen-ID oder persönliche Chat-ID</div>
+        </div>
+        <div style={{ display:"flex", gap:"12px" }}>
+          <button
+            onClick={save}
+            style={{ flex:1, background: saved ? GOLD : "transparent", color: saved ? BG : GOLD, border:`1px solid ${GOLD}`, borderRadius:"2px", padding:"12px", fontFamily:"Georgia,serif", fontSize:"12px", letterSpacing:"2px", textTransform:"uppercase", cursor:"pointer", transition:"all .3s" }}
+          >
+            {saved ? "✓ Gespeichert" : "Speichern"}
+          </button>
+          <button
+            onClick={onClose}
+            style={{ background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"2px", padding:"12px 20px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer" }}
+          >
+            Schließen
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const lang = "de";
   const [activeCat, setActiveCat] = useState(CATEGORIES_DATA[0].id);
+  const [showTgSettings, setShowTgSettings] = useState(false);
+  const [logoClicks, setLogoClicks] = useState(0);
+  const logoClickTimer = React.useRef(null);
+
+  const handleLogoClick = () => {
+    const next = logoClicks + 1;
+    setLogoClicks(next);
+    if (logoClickTimer.current) clearTimeout(logoClickTimer.current);
+    if (next >= 5) {
+      setShowTgSettings(true);
+      setLogoClicks(0);
+    } else {
+      logoClickTimer.current = setTimeout(() => setLogoClicks(0), 2000);
+    }
+  };
   const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -418,7 +499,38 @@ export default function App() {
   });
   const removeFromCart = key => setCart(prev => prev.filter(i => i.id + i.name !== key));
   const totalItems = cart.reduce((s, i) => s + i.qty, 0);
-  const handleOrder = () => { setShowCart(false); setShowSuccess(true); setCart([]); };
+  const sendToTelegram = async (cartItems) => {
+    const token = localStorage.getItem("tg_token");
+    const chatId = localStorage.getItem("tg_chatid");
+    if (!token || !chatId) return;
+    const total = cartItems.reduce((s, i) => s + (i.price || 0) * i.qty, 0);
+    const lines = cartItems.map(i =>
+      `• ${i.name}
+  ${i.qty} × ${fmt(i.price || 0)} = ${fmt((i.price || 0) * i.qty)}`
+    ).join("\n");
+    const msg = `🍽 *Neue Bestellung – Hopmanns Olive*
+
+${lines}
+
+─────────────────
+*Gesamt: ${fmt(total)}*
+
+_${new Date().toLocaleString("de-DE")}_`;
+    try {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: "Markdown" }),
+      });
+    } catch(e) { console.error("Telegram error:", e); }
+  };
+
+  const handleOrder = () => {
+    sendToTelegram(cart);
+    setShowCart(false);
+    setShowSuccess(true);
+    setCart([]);
+  };
   const cat = CATEGORIES_DATA.find(c => c.id === activeCat);
 
   return (
@@ -428,7 +540,7 @@ export default function App() {
       <header style={{ background:BG, borderBottom:`1px solid ${BG3}`, position:"sticky", top:0, zIndex:40 }}>
         <div style={{ maxWidth:"920px", margin:"0 auto", padding:"14px 20px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"16px", justifyContent:"space-between", marginBottom:"14px" }}>
-            <HopmannsLogo size={68}/>
+            <div onClick={handleLogoClick} style={{ cursor:"default", userSelect:"none" }}><HopmannsLogo size={68}/></div>
             <div style={{ flex:1, textAlign:"center" }}>
               <div style={{ fontSize:"11px", letterSpacing:"5px", color:GOLD, textTransform:"uppercase", marginBottom:"4px" }}>{ui.restaurant}</div>
               <div style={{ fontSize:"clamp(18px,4vw,26px)", fontWeight:"bold", letterSpacing:"4px", color:TEXT, textTransform:"uppercase" }}>Hopmanns Olive</div>
@@ -499,12 +611,13 @@ export default function App() {
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.1</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.2</div>
         </div>
       </main>
 
       {showCart && <Cart cart={cart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onOrder={handleOrder} ui={ui}/>}
       {showSuccess && <OrderSuccess onClose={() => setShowSuccess(false)} ui={ui}/>}
+      {showTgSettings && <TelegramSettings onClose={() => setShowTgSettings(false)}/>}
     </div>
   );
 }
