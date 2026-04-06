@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 // ── TRANSLATIONS ──────────────────────────────────────────────
 // (legacy data removed – using CATEGORIES_DATA below)
@@ -424,6 +424,7 @@ const TelegramSettings = ({ onClose }) => {
   const [botToken, setBotToken] = useState(localStorage.getItem("tg_token") || "8556873591:AAEtuYkA6tO3i4W-AGbiQKDRL7mVk6Kah34");
   const [chatId, setChatId] = useState(localStorage.getItem("tg_chatid") || "8792112920");
   const [saved, setSaved] = useState(false);
+  const [savedTable, setSavedTable] = useState(parseInt(localStorage.getItem("tg_table")) || null);
 
   const save = () => {
     localStorage.setItem("tg_token", botToken.trim());
@@ -467,6 +468,24 @@ const TelegramSettings = ({ onClose }) => {
           />
           <div style={{ fontSize:"11px", color:TEXTMUT, marginTop:"4px", fontStyle:"italic" }}>Gruppen-ID oder persönliche Chat-ID</div>
         </div>
+        <div style={{ marginBottom:"24px" }}>
+          <div style={labelStyle}>Tischnummer</div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:"8px", marginTop:"10px" }}>
+            {[1,2,3,4,5,6,7,8,9,10].map(n => (
+              <button key={n}
+                onClick={() => { localStorage.setItem("tg_table", n); setSavedTable(n); }}
+                style={{
+                  padding:"12px 0", borderRadius:"2px",
+                  border:`1px solid ${savedTable === n ? GOLD : BG3}`,
+                  background: savedTable === n ? `${GOLD}33` : "transparent",
+                  color: savedTable === n ? GOLD : TEXTMUT,
+                  fontFamily:"Georgia,serif", fontSize:"15px", fontWeight:"bold",
+                  cursor:"pointer", transition:"all .2s",
+                }}
+              >{n}</button>
+            ))}
+          </div>
+        </div>
         <div style={{ display:"flex", gap:"12px" }}>
           <button
             onClick={save}
@@ -487,6 +506,23 @@ const TelegramSettings = ({ onClose }) => {
 };
 
 export default function App() {
+  useEffect(() => {
+    // Viewport-Meta für korrekte mobile Darstellung
+    let meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'viewport';
+      document.head.appendChild(meta);
+    }
+    meta.content = 'width=device-width, initial-scale=1, maximum-scale=1';
+
+    // Verhindere horizontales Scrollen
+    document.body.style.overflowX = 'hidden';
+    document.documentElement.style.overflowX = 'hidden';
+    document.body.style.width = '100%';
+    document.documentElement.style.width = '100%';
+  }, []);
+
   const lang = "de";
   const [activeCat, setActiveCat] = useState(CATEGORIES_DATA[0].id);
   const [showTgSettings, setShowTgSettings] = useState(false);
@@ -505,10 +541,8 @@ export default function App() {
     }
   };
   const [cart, setCart] = useState([]);
-  const [tableNumber, setTableNumber] = useState(null);
+  const [tableNumber, setTableNumber] = useState(parseInt(localStorage.getItem("tg_table")) || null);
   const [showTablePicker, setShowTablePicker] = useState(false);
-  const [cartClicks, setCartClicks] = useState(0);
-  const cartClickTimer = React.useRef(null);
   const [showCart, setShowCart] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -580,18 +614,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             </div>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"8px", flexShrink:0 }}>
               <button
-                onClick={() => {
-                  const next = cartClicks + 1;
-                  setCartClicks(next);
-                  if (cartClickTimer.current) clearTimeout(cartClickTimer.current);
-                  if (next >= 5) {
-                    setShowTablePicker(true);
-                    setCartClicks(0);
-                  } else {
-                    cartClickTimer.current = setTimeout(() => setCartClicks(0), 2000);
-                    setShowCart(true);
-                  }
-                }}
+                onClick={() => setShowCart(true)}
                 style={{ ...btnStyle(), position:"relative", padding:"8px 14px", display:"flex", alignItems:"center", gap:"8px" }}
                 onMouseEnter={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; }}
@@ -643,7 +666,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             {t(cat.menuNote, lang)}
           </div>
         )}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(340px, 1fr))", gap:"0 48px" }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:"0 48px" }}>
           {cat.items.map(item => (
             <div key={item.id} style={{ borderBottom:`1px solid ${BG3}`, paddingBottom:"2px" }}>
               <MenuItem item={item} onAdd={addToCart} lang={lang} ui={ui}/>
@@ -654,13 +677,13 @@ _${new Date().toLocaleString("de-DE")}_`;
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.3</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.4</div>
         </div>
       </main>
 
       {showCart && <Cart cart={cart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onOrder={handleOrder} ui={ui}/>}
       {showSuccess && <OrderSuccess onClose={() => setShowSuccess(false)} ui={ui}/>}
-      {showTgSettings && <TelegramSettings onClose={() => setShowTgSettings(false)}/>}
+      {showTgSettings && <TelegramSettings onClose={() => { setShowTgSettings(false); const t = parseInt(localStorage.getItem("tg_table")); if (t) setTableNumber(t); }}/>}
       {showTablePicker && <TablePicker current={tableNumber} onSelect={setTableNumber} onClose={() => setShowTablePicker(false)}/>}
     </div>
   );
