@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v2.7";
+const VERSION = "v2.8";
 
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
@@ -676,8 +676,8 @@ _${new Date().toLocaleString("de-DE")}_`;
     setTimeout(() => setSendStatus(""), 3000);
   };
 
-  const fieldStyle = { width:"100%", background:BG, border:`1px solid ${BG3}`, borderRadius:"2px", color:TEXT, fontFamily:"Georgia,serif", fontSize:"13px", padding:"8px 10px", outline:"none", boxSizing:"border-box" };
-  const labelStyle = { fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"4px", display:"block" };
+  const fieldStyle = { width:"100%", background:BG, border:`1px solid ${BG3}`, borderRadius:"4px", color:TEXT, fontFamily:"Georgia,serif", fontSize:"16px", padding:"12px 14px", outline:"none", boxSizing:"border-box" };
+  const labelStyle = { fontSize:"12px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"6px", display:"block" };
 
   return (
     <div style={{ position:"fixed", inset:0, zIndex:100, background:BG, display:"flex", flexDirection:"column", overflowY:"auto" }} onClick={onClose}>
@@ -694,10 +694,10 @@ _${new Date().toLocaleString("de-DE")}_`;
         {/* Tischnummer */}
         <div style={{ marginBottom:"24px" }}>
           <label style={labelStyle}>Tischnummer</label>
-          <div style={{ display:"flex", gap:"8px", flexWrap:"wrap" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:"10px" }}>
             {[1,2,3,4,5,6,7,8,9,10].map(n => (
               <button key={n} onClick={() => setTable(n)}
-                style={{ padding:"10px 14px", borderRadius:"2px", border:`1px solid ${table===n ? GOLD : BG3}`, background: table===n ? `${GOLD}33` : "transparent", color: table===n ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"15px", fontWeight:"bold", cursor:"pointer", transition:"all .2s" }}
+                style={{ padding:"14px 18px", borderRadius:"4px", border:`1px solid ${table===n ? GOLD : BG3}`, background: table===n ? `${GOLD}33` : BG2, color: table===n ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"18px", fontWeight:"bold", cursor:"pointer", transition:"all .2s", minWidth:"52px" }}
               >{n}</button>
             ))}
           </div>
@@ -764,7 +764,7 @@ _${new Date().toLocaleString("de-DE")}_`;
               <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
                 {GANG_CATS.map(g => (
                   <button key={g.id} onClick={() => addCourse(seatIdx, g.id)}
-                    style={{ padding:"6px 12px", borderRadius:"2px", border:`1px dashed ${BG3}`, background:"transparent", color:TEXTMUT, fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", transition:"all .2s", letterSpacing:"0.5px" }}
+                    style={{ padding:"6px 12px", borderRadius:"2px", border:`1px dashed ${BG3}`, background:"transparent", color:TEXTMUT, fontFamily:"Georgia,serif", fontSize:"14px", cursor:"pointer", transition:"all .2s", letterSpacing:"0.5px" }}
                     onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.color = GOLD; }}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = BG3; e.currentTarget.style.color = TEXTMUT; }}
                   >+ {g.label}</button>
@@ -776,13 +776,13 @@ _${new Date().toLocaleString("de-DE")}_`;
 
         {/* Weiteren Platz */}
         <button onClick={addSeat}
-          style={{ width:"100%", background:"transparent", border:`1px dashed ${BG3}`, color:TEXTMUT, borderRadius:"2px", padding:"12px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px", marginBottom:"20px" }}
+          style={{ width:"100%", background:"transparent", border:`1px dashed ${BG3}`, color:TEXTMUT, borderRadius:"4px", padding:"16px", fontFamily:"Georgia,serif", fontSize:"15px", cursor:"pointer", letterSpacing:"1px", marginBottom:"20px" }}
         >+ Weiteren Platz hinzufügen</button>
 
         <GoldDivider/>
 
         <button onClick={sendOrder}
-          style={{ width:"100%", background: sendStatus==="ok" ? "#2d6a2d" : sendStatus==="error" ? "#6a2d2d" : GOLD, color: sendStatus ? TEXT : BG, border:"none", borderRadius:"2px", padding:"14px", fontSize:"14px", fontFamily:"Georgia,serif", letterSpacing:"2px", textTransform:"uppercase", fontWeight:"bold", cursor:"pointer", transition:"all .3s", marginBottom:"10px" }}
+          style={{ width:"100%", background: sendStatus==="ok" ? "#2d6a2d" : sendStatus==="error" ? "#6a2d2d" : GOLD, color: sendStatus ? TEXT : BG, border:"none", borderRadius:"2px", padding:"18px", fontSize:"16px", fontFamily:"Georgia,serif", letterSpacing:"2px", textTransform:"uppercase", fontWeight:"bold", cursor:"pointer", transition:"all .3s", marginBottom:"10px", borderRadius:"4px" }}
         >
           {sendStatus==="sending" ? "⏳ Sende …" : sendStatus==="ok" ? "✅ Bestellung gesendet!" : sendStatus==="error" ? "❌ Fehler – Einstellungen prüfen" : sendStatus==="notable" ? "⚠️ Tisch wählen!" : "📨 Bestellung abschicken"}
         </button>
@@ -947,7 +947,7 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
     orderReceived:"Ihre Bestellung wurde aufgenommen. Wir kümmern uns sofort darum.",
     back:"Zurück zur Karte", addBtn:"+ Bestellen", perPerson:"p.P.",
     restaurant:"Genussrestaurant", menu:"Speisekarte",
-    version:"v2.7",
+    version:"v2.8",
     note:"Bei Unverträglichkeiten & Allergien sprechen Sie uns bitte an. Wir beraten Sie gerne. Preise enthalten die gesetzliche MwSt."
   };
 
@@ -1136,7 +1136,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             </button>
           </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.7</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.8</div>
         </div>
       </main>
 
