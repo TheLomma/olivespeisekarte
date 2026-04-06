@@ -339,7 +339,7 @@ const MenuItem = ({ item, onAdd, lang, ui }) => {
   );
 };
 
-const Cart = ({ cart, onRemove, onClose, onOrder, onChangeQty, ui }) => {
+const Cart = ({ cart, onRemove, onClose, onOrder, onChangeQty, onNoteChange, note, ui }) => {
   const total = cart.reduce((s, i) => s + (i.price || 0) * i.qty, 0);
   return (
     <div style={{ position:"fixed", inset:0, zIndex:50, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }} onClick={onClose}>
@@ -373,6 +373,13 @@ const Cart = ({ cart, onRemove, onClose, onOrder, onChangeQty, ui }) => {
               <div style={{ display:"flex", justifyContent:"space-between", fontWeight:"bold", fontSize:"18px", color:TEXT, marginBottom:"20px" }}>
                 <span>{ui.total}</span><span style={{ color:GOLD }}>{fmt(total)}</span>
               </div>
+              <textarea
+                value={note}
+                onChange={e => onNoteChange(e.target.value)}
+                placeholder="Sonderwünsche, Allergien, Anmerkungen …"
+                rows={3}
+                style={{ width:"100%", background:BG, border:`1px solid ${BG3}`, borderRadius:"2px", color:TEXT, fontFamily:"Georgia,serif", fontSize:"13px", padding:"10px 12px", outline:"none", resize:"none", boxSizing:"border-box", marginBottom:"14px" }}
+              />
               <button onClick={onOrder} style={{ width:"100%", background:GOLD, color:BG, border:"none", borderRadius:"2px", padding:"14px", fontSize:"14px", fontFamily:"Georgia,serif", letterSpacing:"2px", textTransform:"uppercase", fontWeight:"bold", cursor:"pointer" }}>{ui.placeOrder}</button>
             </>
         }
@@ -594,6 +601,7 @@ export default function App() {
   const [showCart, setShowCart] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showLastOrder, setShowLastOrder] = useState(false);
+  const [orderNote, setOrderNote] = useState("");
 
   const ui = {
     cart:"Warenkorb", order:"Bestellung", empty:"Ihr Warenkorb ist leer.", total:"Gesamt",
@@ -626,9 +634,12 @@ export default function App() {
   ${i.qty} × ${fmt(i.price || 0)} = ${fmt((i.price || 0) * i.qty)}`
     ).join("\n");
     const tischInfo = tableNumber ? `Bestellung für Tisch ${tableNumber}` : "Bestellung (kein Tisch gewählt)";
+    const noteText = orderNote ? `
+
+📝 *Anmerkung:* ${orderNote}` : "";
     const msg = `🍽 *${tischInfo} – Hopmanns Olive*
 
-${lines}
+${lines}${noteText}
 
 ─────────────────
 *Gesamt: ${fmt(total)}*
@@ -650,6 +661,7 @@ _${new Date().toLocaleString("de-DE")}_`;
     setShowCart(false);
     setShowSuccess(true);
     setCart([]);
+    setOrderNote("");
   };
   const cat = CATEGORIES_DATA.find(c => c.id === activeCat);
 
@@ -739,11 +751,11 @@ _${new Date().toLocaleString("de-DE")}_`;
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.6</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.7</div>
         </div>
       </main>
 
-      {showCart && <Cart cart={cart} onRemove={removeFromCart} onChangeQty={changeQty} onClose={() => setShowCart(false)} onOrder={handleOrder} ui={ui}/>}
+      {showCart && <Cart cart={cart} onRemove={removeFromCart} onChangeQty={changeQty} onClose={() => setShowCart(false)} onOrder={handleOrder} onNoteChange={setOrderNote} note={orderNote} ui={ui}/>}
       {showSuccess && <OrderSuccess onClose={() => setShowSuccess(false)} ui={ui}/>}
       {showTgSettings && <TelegramSettings onClose={() => { setShowTgSettings(false); const t = parseInt(localStorage.getItem("tg_table")); if (t) setTableNumber(t); }}/>}
       {showTablePicker && <TablePicker current={tableNumber} onSelect={setTableNumber} onClose={() => setShowTablePicker(false)}/>}
