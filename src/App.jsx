@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v2.8";
+const VERSION = "v3.0";
 
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
@@ -611,57 +611,47 @@ const ServiceMode = ({ onClose }) => {
   const [table, setTable] = useState("");
   const [seats, setSeats] = useState([{ id: 1, courses: [] }]);
   const [sendStatus, setSendStatus] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
 
   const addSeat = () => setSeats(prev => [...prev, { id: prev.length + 1, courses: [] }]);
   const removeSeat = idx => setSeats(prev => prev.filter((_, i) => i !== idx));
-
-  const addCourse = (seatIdx, catId) => {
-    setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : {
-      ...s,
-      courses: [...s.courses, { catId, item: null, variant: 0, note: "" }]
-    }));
-  };
-
-  const removeCourse = (seatIdx, courseIdx) => {
-    setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : {
-      ...s,
-      courses: s.courses.filter((_, ci) => ci !== courseIdx)
-    }));
-  };
-
-  const updateCourse = (seatIdx, courseIdx, patch) => {
-    setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : {
-      ...s,
-      courses: s.courses.map((c, ci) => ci !== courseIdx ? c : { ...c, ...patch })
-    }));
-  };
-
+  const addCourse = (seatIdx, catId) => setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : { ...s, courses: [...s.courses, { catId, item: null, variant: 0, note: "" }] }));
+  const removeCourse = (seatIdx, courseIdx) => setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : { ...s, courses: s.courses.filter((_, ci) => ci !== courseIdx) }));
+  const updateCourse = (seatIdx, courseIdx, patch) => setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : { ...s, courses: s.courses.map((c, ci) => ci !== courseIdx ? c : { ...c, ...patch }) }));
   const getItems = (catId) => CATEGORIES_DATA.find(c => c.id === catId)?.items.filter(it => !it.checkboxGroup && !it.sectionLabel) || [];
+
+  const buildLines = () => seats.map(s => {
+    const courseLines = s.courses.map(c => {
+      const gangLabel = GANG_CATS.find(g => g.id === c.catId)?.label || c.catId;
+      if (!c.item) return null;
+      const item = CATEGORIES_DATA.flatMap(cat => cat.items).find(it => it.id === c.item);
+      if (!item) return null;
+      const name = item.name?.de || item.name || "";
+      const varLabel = item.variants ? (item.variants[c.variant]?.label?.de || "") : "";
+      const price = item.variants ? item.variants[c.variant]?.price : item.price;
+      return { gangLabel, name, varLabel, price: price || 0, note: c.note };
+    }).filter(Boolean);
+    if (!courseLines.length) return null;
+    return { seat: s.id, courses: courseLines };
+  }).filter(Boolean);
+
+  const calcTotal = () => buildLines().flatMap(s => s.courses).reduce((sum, c) => sum + c.price, 0);
 
   const sendOrder = async () => {
     if (!table) { setSendStatus("notable"); setTimeout(() => setSendStatus(""), 3000); return; }
     const token = localStorage.getItem("tg_token") || "";
     const chatId = localStorage.getItem("tg_chatid") || "";
     setSendStatus("sending");
-    const lines = seats.map(s => {
-      if (!s.courses.length) return `Platz ${s.id}: – (kein Gericht gewählt)`;
-      const courseLines = s.courses.map(c => {
-        const gangLabel = GANG_CATS.find(g => g.id === c.catId)?.label || c.catId;
-        if (!c.item) return `    [${gangLabel}]: – (kein Gericht)`;
-        const item = CATEGORIES_DATA.flatMap(cat => cat.items).find(it => it.id === c.item);
-        if (!item) return `    [${gangLabel}]: – (unbekannt)`;
-        const name = item.name?.de || item.name || "";
-        const varLabel = item.variants ? (item.variants[c.variant]?.label?.de || "") : "";
-        const price = item.variants ? item.variants[c.variant]?.price : item.price;
-        const noteStr = c.note ? ` [${c.note}]` : "";
-        return `    [${gangLabel}] ${name}${varLabel ? " – " + varLabel : ""}${noteStr} · ${fmt(price || 0)}`;
-      }).join("\n");
-      return `Platz ${s.id}:
-${courseLines}`;
+    const total = calcTotal();
+    const textLines = buildLines().map(s => {
+      const cl = s.courses.map(c => `    [${c.gangLabel}] ${c.name}${c.varLabel ? " – " + c.varLabel : ""}${c.note ? " [" + c.note + "]" : ""} · ${fmt(c.price)}`).join("\n");
+      return `Platz ${s.seat}:
+${cl}`;
     }).join("\n\n");
     const msg = `🍽 *Service-Bestellung – Tisch ${table}*
+*Gesamt: ${fmt(total)}*
 
-${lines}
+${textLines}
 
 _${new Date().toLocaleString("de-DE")}_`;
     try {
@@ -679,53 +669,107 @@ _${new Date().toLocaleString("de-DE")}_`;
   const fieldStyle = { width:"100%", background:BG, border:`1px solid ${BG3}`, borderRadius:"4px", color:TEXT, fontFamily:"Georgia,serif", fontSize:"16px", padding:"12px 14px", outline:"none", boxSizing:"border-box" };
   const labelStyle = { fontSize:"12px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"6px", display:"block" };
 
+  // VORSCHAU-SCREEN
+  if (showPreview) {
+    const preview = buildLines();
+    const total = calcTotal();
+    return (
+      <div style={{ position:"fixed", inset:0, zIndex:100, background:BG, overflowY:"auto" }}>
+        <div style={{ width:"100%", maxWidth:"760px", margin:"0 auto", padding:"28px 24px 80px", boxSizing:"border-box", fontFamily:"Georgia,serif" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
+            <div>
+              <div style={{ fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase", color:GOLD, marginBottom:"2px" }}>Service-Modus</div>
+              <div style={{ fontSize:"20px", fontWeight:"bold", color:TEXT }}>Bon-Vorschau · Tisch {table}</div>
+            </div>
+            <button onClick={() => setShowPreview(false)} style={{ background:"none", border:`1px solid ${BG3}`, borderRadius:"4px", fontSize:"13px", color:TEXTMUT, cursor:"pointer", padding:"8px 14px", fontFamily:"Georgia,serif", letterSpacing:"1px" }}>← Bearbeiten</button>
+          </div>
+          <GoldDivider/>
+          {preview.length === 0 && (
+            <div style={{ color:TEXTMUT, fontStyle:"italic", textAlign:"center", padding:"32px 0" }}>Keine Gerichte ausgewählt.</div>
+          )}
+          {preview.map(s => (
+            <div key={s.seat} style={{ background:BG2, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"16px 18px", marginBottom:"12px" }}>
+              <div style={{ fontSize:"13px", fontWeight:"bold", color:GOLD, letterSpacing:"1px", marginBottom:"10px" }}>Platz {s.seat}</div>
+              {s.courses.map((c, i) => (
+                <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", padding:"8px 0", borderBottom:`1px solid ${BG3}`, gap:"12px" }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:"11px", letterSpacing:"1.5px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"2px" }}>{c.gangLabel}</div>
+                    <div style={{ fontSize:"14px", color:TEXT }}>{c.name}{c.varLabel ? ` – ${c.varLabel}` : ""}</div>
+                    {c.note && <div style={{ fontSize:"12px", color:GOLDLT, fontStyle:"italic", marginTop:"2px" }}>✎ {c.note}</div>}
+                  </div>
+                  <div style={{ fontWeight:"bold", color:GOLD, fontSize:"14px", whiteSpace:"nowrap" }}>{fmt(c.price)}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+          <div style={{ background:`${GOLD}11`, border:`1px solid ${GOLD}44`, borderRadius:"4px", padding:"16px 18px", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"24px" }}>
+            <div style={{ fontSize:"14px", fontWeight:"bold", color:TEXT, letterSpacing:"1px" }}>Gesamtbetrag</div>
+            <div style={{ fontSize:"22px", fontWeight:"bold", color:GOLD }}>{fmt(total)}</div>
+          </div>
+          <GoldDivider/>
+          <button onClick={sendOrder} style={{ width:"100%", background: sendStatus==="ok" ? "#2d6a2d" : sendStatus==="error" ? "#6a2d2d" : GOLD, color: sendStatus==="ok" || sendStatus==="error" ? TEXT : BG, border:"none", borderRadius:"4px", padding:"18px", fontSize:"16px", fontFamily:"Georgia,serif", letterSpacing:"2px", textTransform:"uppercase", fontWeight:"bold", cursor:"pointer", transition:"all .3s", marginBottom:"10px" }}>
+            {sendStatus==="sending" ? "⏳ Sende ..." : sendStatus==="ok" ? "✅ Bestellung gesendet!" : sendStatus==="error" ? "❌ Fehler – Einstellungen prüfen" : "📨 Jetzt abschicken"}
+          </button>
+          <button onClick={() => setShowPreview(false)} style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"16px", fontFamily:"Georgia,serif", fontSize:"15px", cursor:"pointer", letterSpacing:"1px" }}>← Zurück zur Bearbeitung</button>
+        </div>
+      </div>
+    );
+  }
+
+  // EINGABE-SCREEN
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:100, background:BG, display:"flex", flexDirection:"column", overflowY:"auto" }} onClick={onClose}>
-      <div style={{ width:"100%", maxWidth:"760px", margin:"0 auto", padding:"28px 24px 80px", boxSizing:"border-box", fontFamily:"Georgia,serif" }} onClick={e => e.stopPropagation()}>
+    <div style={{ position:"fixed", inset:0, zIndex:100, background:BG, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      <div style={{ width:"100%", maxWidth:"760px", margin:"0 auto", padding:"28px 24px 80px", boxSizing:"border-box", fontFamily:"Georgia,serif" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
           <div>
             <div style={{ fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase", color:GOLD, marginBottom:"2px" }}>Service-Modus</div>
             <div style={{ fontSize:"20px", fontWeight:"bold", color:TEXT }}>Bestellung aufnehmen</div>
           </div>
-          <button onClick={onClose} style={{ background:"none", border:"none", fontSize:"22px", color:TEXTMUT, cursor:"pointer" }}>×</button>
+          <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+            {table ? <div style={{ background:`${GOLD}22`, border:`1px solid ${GOLD}`, borderRadius:"4px", padding:"6px 14px", color:GOLD, fontFamily:"Georgia,serif", fontSize:"14px", fontWeight:"bold" }}>Tisch {table}</div> : null}
+            <button onClick={onClose} style={{ background:"none", border:`1px solid ${BG3}`, borderRadius:"4px", fontSize:"20px", color:TEXTMUT, cursor:"pointer", padding:"4px 12px", lineHeight:1 }}>×</button>
+          </div>
         </div>
         <GoldDivider/>
 
-        {/* Tischnummer */}
+        {/* LIVE GESAMTPREIS */}
+        {calcTotal() > 0 && (
+          <div style={{ background:`${GOLD}11`, border:`1px solid ${GOLD}44`, borderRadius:"4px", padding:"12px 18px", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
+            <div style={{ fontSize:"12px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT }}>Gesamtbetrag</div>
+            <div style={{ fontSize:"20px", fontWeight:"bold", color:GOLD, fontFamily:"Georgia,serif" }}>{fmt(calcTotal())}</div>
+          </div>
+        )}
+
         <div style={{ marginBottom:"24px" }}>
           <label style={labelStyle}>Tischnummer</label>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:"10px" }}>
             {[1,2,3,4,5,6,7,8,9,10].map(n => (
               <button key={n} onClick={() => setTable(n)}
-                style={{ padding:"14px 18px", borderRadius:"4px", border:`1px solid ${table===n ? GOLD : BG3}`, background: table===n ? `${GOLD}33` : BG2, color: table===n ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"18px", fontWeight:"bold", cursor:"pointer", transition:"all .2s", minWidth:"52px" }}
+                style={{ padding:"14px 0", borderRadius:"4px", border:`1px solid ${table===n ? GOLD : BG3}`, background: table===n ? `${GOLD}33` : BG2, color: table===n ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"18px", fontWeight:"bold", cursor:"pointer", transition:"all .2s" }}
               >{n}</button>
             ))}
           </div>
         </div>
 
-        {/* Plätze */}
         {seats.map((seat, seatIdx) => (
-          <div key={seat.id} style={{ background:BG, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"18px", marginBottom:"16px" }}>
+          <div key={seat.id} style={{ background:BG2, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"18px", marginBottom:"16px" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
-              <div style={{ fontSize:"14px", fontWeight:"bold", color:GOLD, letterSpacing:"1px" }}>Platz {seat.id}</div>
+              <div style={{ fontSize:"16px", fontWeight:"bold", color:GOLD, letterSpacing:"1px" }}>Platz {seat.id}</div>
               {seats.length > 1 && (
-                <button onClick={() => removeSeat(seatIdx)} style={{ background:"transparent", border:`1px solid ${BG3}`, color:TEXTMUT, borderRadius:"2px", padding:"3px 10px", fontSize:"12px", cursor:"pointer", fontFamily:"Georgia,serif" }}>✕ entfernen</button>
+                <button onClick={() => removeSeat(seatIdx)} style={{ background:"transparent", border:`1px solid ${BG3}`, color:TEXTMUT, borderRadius:"2px", padding:"4px 12px", fontSize:"13px", cursor:"pointer", fontFamily:"Georgia,serif" }}>× entfernen</button>
               )}
             </div>
 
-            {/* Gänge dieses Platzes */}
             {seat.courses.map((course, courseIdx) => {
               const gangLabel = GANG_CATS.find(g => g.id === course.catId)?.label || course.catId;
               const items = getItems(course.catId);
               const selItem = items.find(it => it.id === course.item);
               return (
-                <div key={courseIdx} style={{ background:BG2, border:`1px solid ${BG3}`, borderRadius:"3px", padding:"12px 14px", marginBottom:"10px" }}>
+                <div key={courseIdx} style={{ background:BG, border:`1px solid ${BG3}`, borderRadius:"3px", padding:"12px 14px", marginBottom:"10px" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
                     <span style={{ fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:GOLDLT }}>{gangLabel}</span>
-                    <button onClick={() => removeCourse(seatIdx, courseIdx)} style={{ background:"transparent", border:"none", color:TEXTMUT, fontSize:"16px", cursor:"pointer", lineHeight:1 }}>×</button>
+                    <button onClick={() => removeCourse(seatIdx, courseIdx)} style={{ background:"transparent", border:"none", color:TEXTMUT, fontSize:"18px", cursor:"pointer", lineHeight:1 }}>×</button>
                   </div>
-
-                  {/* Gericht */}
                   <div style={{ marginBottom:"8px" }}>
                     <select value={course.item || ""} onChange={e => updateCourse(seatIdx, courseIdx, { item: parseInt(e.target.value) || null, variant: 0 })}
                       style={{ ...fieldStyle, cursor:"pointer" }}>
@@ -735,38 +779,31 @@ _${new Date().toLocaleString("de-DE")}_`;
                       ))}
                     </select>
                   </div>
-
-                  {/* Variante */}
                   {selItem?.variants && (
                     <div style={{ display:"flex", gap:"6px", flexWrap:"wrap", marginBottom:"8px" }}>
                       {selItem.variants.map((v, vi) => (
                         <button key={vi} onClick={() => updateCourse(seatIdx, courseIdx, { variant: vi })}
-                          style={{ padding:"5px 10px", borderRadius:"2px", border:`1px solid ${course.variant===vi ? GOLD : BG3}`, background: course.variant===vi ? `${GOLD}22` : "transparent", color: course.variant===vi ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", transition:"all .2s" }}
+                          style={{ padding:"8px 12px", borderRadius:"4px", border:`1px solid ${course.variant===vi ? GOLD : BG3}`, background: course.variant===vi ? `${GOLD}22` : "transparent", color: course.variant===vi ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"13px", cursor:"pointer", transition:"all .2s" }}
                         >{v.label?.de} · {fmt(v.price)}</button>
                       ))}
                     </div>
                   )}
-
-                  {/* Sonderwunsch */}
                   {course.item && (
                     <input type="text" value={course.note} onChange={e => updateCourse(seatIdx, courseIdx, { note: e.target.value })}
-                      placeholder="Sonderwunsch (optional) …"
-                      style={{ ...fieldStyle, fontStyle: course.note ? "normal" : "italic", fontSize:"12px" }}
+                      placeholder="Sonderwunsch (optional) ..."
+                      style={{ ...fieldStyle, fontStyle: course.note ? "normal" : "italic", fontSize:"15px" }}
                     />
                   )}
                 </div>
               );
             })}
 
-            {/* Gang hinzufügen Buttons */}
             <div style={{ marginTop:"10px" }}>
               <div style={{ fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"8px" }}>Gang hinzufügen</div>
-              <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" }}>
+              <div style={{ display:"flex", gap:"8px", flexWrap:"wrap" }}>
                 {GANG_CATS.map(g => (
                   <button key={g.id} onClick={() => addCourse(seatIdx, g.id)}
-                    style={{ padding:"6px 12px", borderRadius:"2px", border:`1px dashed ${BG3}`, background:"transparent", color:TEXTMUT, fontFamily:"Georgia,serif", fontSize:"14px", cursor:"pointer", transition:"all .2s", letterSpacing:"0.5px" }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.color = GOLD; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = BG3; e.currentTarget.style.color = TEXTMUT; }}
+                    style={{ padding:"10px 16px", borderRadius:"4px", border:`1px dashed ${BG3}`, background:"transparent", color:TEXTMUT, fontFamily:"Georgia,serif", fontSize:"14px", cursor:"pointer", transition:"all .2s" }}
                   >+ {g.label}</button>
                 ))}
               </div>
@@ -774,19 +811,19 @@ _${new Date().toLocaleString("de-DE")}_`;
           </div>
         ))}
 
-        {/* Weiteren Platz */}
         <button onClick={addSeat}
           style={{ width:"100%", background:"transparent", border:`1px dashed ${BG3}`, color:TEXTMUT, borderRadius:"4px", padding:"16px", fontFamily:"Georgia,serif", fontSize:"15px", cursor:"pointer", letterSpacing:"1px", marginBottom:"20px" }}
         >+ Weiteren Platz hinzufügen</button>
 
         <GoldDivider/>
 
-        <button onClick={sendOrder}
-          style={{ width:"100%", background: sendStatus==="ok" ? "#2d6a2d" : sendStatus==="error" ? "#6a2d2d" : GOLD, color: sendStatus ? TEXT : BG, border:"none", borderRadius:"2px", padding:"18px", fontSize:"16px", fontFamily:"Georgia,serif", letterSpacing:"2px", textTransform:"uppercase", fontWeight:"bold", cursor:"pointer", transition:"all .3s", marginBottom:"10px", borderRadius:"4px" }}
+        <button
+          onClick={() => { if (!table) { setSendStatus("notable"); setTimeout(() => setSendStatus(""), 3000); return; } setShowPreview(true); }}
+          style={{ width:"100%", background: sendStatus==="notable" ? "#6a3a2d" : GOLD, color: sendStatus==="notable" ? TEXT : BG, border:"none", borderRadius:"4px", padding:"18px", fontSize:"16px", fontFamily:"Georgia,serif", letterSpacing:"2px", textTransform:"uppercase", fontWeight:"bold", cursor:"pointer", transition:"all .3s", marginBottom:"10px" }}
         >
-          {sendStatus==="sending" ? "⏳ Sende …" : sendStatus==="ok" ? "✅ Bestellung gesendet!" : sendStatus==="error" ? "❌ Fehler – Einstellungen prüfen" : sendStatus==="notable" ? "⚠️ Tisch wählen!" : "📨 Bestellung abschicken"}
+          {sendStatus==="notable" ? "⚠️ Tisch wählen!" : "📄 Vorschau & Abschicken"}
         </button>
-        <button onClick={onClose} style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"2px", padding:"12px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px" }}>Schließen</button>
+        <button onClick={onClose} style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"16px", fontFamily:"Georgia,serif", fontSize:"15px", cursor:"pointer", letterSpacing:"1px" }}>Schließen</button>
       </div>
     </div>
   );
@@ -947,7 +984,7 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
     orderReceived:"Ihre Bestellung wurde aufgenommen. Wir kümmern uns sofort darum.",
     back:"Zurück zur Karte", addBtn:"+ Bestellen", perPerson:"p.P.",
     restaurant:"Genussrestaurant", menu:"Speisekarte",
-    version:"v2.8",
+    version:"v3.0",
     note:"Bei Unverträglichkeiten & Allergien sprechen Sie uns bitte an. Wir beraten Sie gerne. Preise enthalten die gesetzliche MwSt."
   };
 
@@ -1136,7 +1173,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             </button>
           </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.8</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 3.0</div>
         </div>
       </main>
 
