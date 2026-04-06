@@ -3,6 +3,17 @@ import React, { useState, useEffect } from "react";
 // ── TRANSLATIONS ──────────────────────────────────────────────
 // (legacy data removed – using CATEGORIES_DATA below)
 
+const fadeIn = {
+  animation: "fadeIn 0.22s ease",
+};
+
+if (typeof document !== "undefined" && !document.getElementById("hopmanns-anim")) {
+  const style = document.createElement("style");
+  style.id = "hopmanns-anim";
+  style.textContent = `@keyframes fadeIn { from { opacity:0; transform:scale(0.97); } to { opacity:1; transform:scale(1); } }`;
+  document.head.appendChild(style);
+}
+
 const BG      = "#1a1a18";
 const BG2     = "#222220";
 const BG3     = "#2c2c29";
@@ -436,6 +447,30 @@ const TelegramSettings = ({ onClose }) => {
   const [botToken, setBotToken] = useState(localStorage.getItem("tg_token") || "8556873591:AAEtuYkA6tO3i4W-AGbiQKDRL7mVk6Kah34");
   const [chatId, setChatId] = useState(localStorage.getItem("tg_chatid") || "8792112920");
   const [saved, setSaved] = useState(false);
+  const [testStatus, setTestStatus] = useState("");
+
+  const sendTest = async () => {
+    setTestStatus("sending");
+    const token = botToken.trim();
+    const chat = chatId.trim();
+    if (!token || !chat) { setTestStatus("error"); setTimeout(() => setTestStatus(""), 3000); return; }
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chat, text: `✅ *Hopmanns Olive – Testverbindung*
+
+Die Telegram-Verbindung funktioniert! 🎉
+
+_${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
+      });
+      const json = await res.json();
+      setTestStatus(json.ok ? "ok" : "error");
+    } catch(e) {
+      setTestStatus("error");
+    }
+    setTimeout(() => setTestStatus(""), 3000);
+  };
   const [savedTable, setSavedTable] = useState(parseInt(localStorage.getItem("tg_table")) || null);
 
   const save = () => {
@@ -511,6 +546,13 @@ const TelegramSettings = ({ onClose }) => {
           >
             Schließen
           </button>
+        </div>
+        <button
+          onClick={sendTest}
+          disabled={testStatus === "sending"}
+          style={{ marginTop:"14px", width:"100%", background: testStatus==="ok" ? "#2d6a2d" : testStatus==="error" ? "#6a2d2d" : "transparent", color: testStatus ? TEXT : TEXTMUT, border:`1px solid ${testStatus==="ok" ? "#4caf50" : testStatus==="error" ? "#f44336" : BG3}`, borderRadius:"2px", padding:"11px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px", transition:"all .3s" }}
+        >
+          {testStatus === "sending" ? "⏳ Sende …" : testStatus === "ok" ? "✅ Erfolgreich gesendet!" : testStatus === "error" ? "❌ Fehler – Token/Chat-ID prüfen" : "📡 Testverbindung senden"}
         </div>
       </div>
     </div>
@@ -590,7 +632,12 @@ export default function App() {
     document.documentElement.style.width = '100%';
   }, []);
 
-  const lang = "de";
+  const [lang, setLang] = useState(localStorage.getItem("lang") || "de");
+  const toggleLang = () => {
+    const next = lang === "de" ? "en" : "de";
+    setLang(next);
+    localStorage.setItem("lang", next);
+  };
   const [activeCat, setActiveCat] = useState(CATEGORIES_DATA[0].id);
   const [showTgSettings, setShowTgSettings] = useState(false);
   const [logoClicks, setLogoClicks] = useState(0);
@@ -695,6 +742,14 @@ _${new Date().toLocaleString("de-DE")}_`;
             </div>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"8px", flexShrink:0 }}>
               <button
+                onClick={toggleLang}
+                style={btnStyle({ fontSize:"10px", padding:"5px 12px" })}
+                onMouseEnter={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; }}
+                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; }}
+              >
+                {lang === "de" ? "🇬🇧 EN" : "🇩🇪 DE"}
+              </button>
+              <button
                 onClick={() => setShowLastOrder(true)}
                 style={btnStyle({ fontSize:"10px", padding:"5px 12px" })}
                 onMouseEnter={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; }}
@@ -766,7 +821,7 @@ _${new Date().toLocaleString("de-DE")}_`;
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.8</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.9</div>
         </div>
       </main>
 
