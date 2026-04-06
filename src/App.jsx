@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v2.2";
+const VERSION = "v2.3";
 
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
@@ -726,7 +726,7 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
     orderReceived:"Ihre Bestellung wurde aufgenommen. Wir kümmern uns sofort darum.",
     back:"Zurück zur Karte", addBtn:"+ Bestellen", perPerson:"p.P.",
     restaurant:"Genussrestaurant", menu:"Speisekarte",
-    version:"v2.2",
+    version:"v2.3",
     note:"Bei Unverträglichkeiten & Allergien sprechen Sie uns bitte an. Wir beraten Sie gerne. Preise enthalten die gesetzliche MwSt."
   };
 
@@ -891,6 +891,20 @@ _${new Date().toLocaleString("de-DE")}_`;
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"24px", textAlign:"center" }}>
+            <div style={{ display:"flex", justifyContent:"center", gap:"12px", flexWrap:"wrap", marginBottom:"20px" }}>
+              <button
+                onClick={callWaiter}
+                style={btnStyle({ fontSize:"11px", padding:"8px 20px", borderColor: callStatus==="ok" ? "#4caf50" : callStatus==="error" ? "#f44336" : GOLD, color: callStatus==="ok" ? "#4caf50" : callStatus==="error" ? "#f44336" : GOLD })}
+              >
+                {callStatus==="sending" ? "⏳ …" : callStatus==="ok" ? "✅ Gerufen!" : callStatus==="error" ? "❌ Fehler" : callStatus==="notable" ? "⚠️ Kein Tisch" : "🛎 Kellner rufen"}
+              </button>
+              <button
+                onClick={requestBill}
+                style={btnStyle({ fontSize:"11px", padding:"8px 20px", borderColor: billStatus==="ok" ? "#4caf50" : billStatus==="error" ? "#f44336" : GOLD, color: billStatus==="ok" ? "#4caf50" : billStatus==="error" ? "#f44336" : GOLD })}
+              >
+                {billStatus==="sending" ? "⏳ …" : billStatus==="ok" ? "✅ Angefordert!" : billStatus==="error" ? "❌ Fehler" : billStatus==="notable" ? "⚠️ Kein Tisch" : "💳 Rechnung"}
+              </button>
+            </div>
             <button
               onClick={toggleLang}
               style={btnStyle({ fontSize:"11px", padding:"8px 24px" })}
@@ -901,7 +915,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             </button>
           </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.2</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.3</div>
         </div>
       </main>
 
