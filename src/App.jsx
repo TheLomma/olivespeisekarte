@@ -516,7 +516,18 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
           <div style={{ fontSize:"11px", color:TEXTMUT, marginTop:"4px", fontStyle:"italic" }}>Gruppen-ID oder persönliche Chat-ID</div>
         </div>
         <div style={{ marginBottom:"24px" }}>
-          <div style={labelStyle}>Tischnummer</div>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"4px" }}>
+            <div style={labelStyle}>Tischnummer</div>
+            {savedTable && (
+              <button
+                onClick={() => { localStorage.removeItem("tg_table"); setSavedTable(null); }}
+                style={{ background:"transparent", border:"none", color:TEXTMUT, fontSize:"11px", cursor:"pointer", fontFamily:"Georgia,serif", textDecoration:"underline" }}
+              >
+                ✕ Zurücksetzen
+              </button>
+            )}
+          </div>
+          <div style={{ display:"none" }}>placeholder</div>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:"8px", marginTop:"10px" }}>
             {[1,2,3,4,5,6,7,8,9,10].map(n => (
               <button key={n}
@@ -821,7 +832,7 @@ _${new Date().toLocaleString("de-DE")}_`;
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.9</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.0</div>
         </div>
       </main>
 
