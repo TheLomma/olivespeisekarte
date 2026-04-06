@@ -564,7 +564,7 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
           style={{ marginTop:"14px", width:"100%", background: testStatus==="ok" ? "#2d6a2d" : testStatus==="error" ? "#6a2d2d" : "transparent", color: testStatus ? TEXT : TEXTMUT, border:`1px solid ${testStatus==="ok" ? "#4caf50" : testStatus==="error" ? "#f44336" : BG3}`, borderRadius:"2px", padding:"11px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px", transition:"all .3s" }}
         >
           {testStatus === "sending" ? "⏳ Sende …" : testStatus === "ok" ? "✅ Erfolgreich gesendet!" : testStatus === "error" ? "❌ Fehler – Token/Chat-ID prüfen" : "📡 Testverbindung senden"}
-        </div>
+        </button>
       </div>
     </div>
   );
