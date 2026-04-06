@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v2.3";
+const VERSION = "v2.4";
 
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
@@ -213,6 +213,8 @@ const MenuItem = ({ item, onAdd, lang, ui }) => {
   const [selectedVariant, setSelectedVariant] = useState(0);
   const [extraChecked, setExtraChecked] = useState(false);
   const [checkedOptions, setCheckedOptions] = useState([]);
+  const [comment, setComment] = useState("");
+  const [showComment, setShowComment] = useState(false);
 
   const toggleOption = (opt) => {
     setCheckedOptions(prev =>
@@ -283,15 +285,19 @@ const MenuItem = ({ item, onAdd, lang, ui }) => {
   const currentLabel = hasVariants ? t(item.variants[selectedVariant].label, lang) : null;
 
   const handleAdd = () => {
+    const baseName = hasVariants ? `${t(item.name, lang)} (${currentLabel})` : t(item.name, lang);
+    const nameWithComment = comment.trim() ? `${baseName} ✎ ${comment.trim()}` : baseName;
     onAdd({
       ...item,
       price: currentPrice,
-      name: hasVariants ? `${t(item.name, lang)} (${currentLabel})` : t(item.name, lang),
+      name: nameWithComment,
     });
     if (item.extra && extraChecked) {
       onAdd({ id: item.id + "-extra", name: `Weinbegleitung (${t(item.name, lang)})`, price: 40.00 });
       setExtraChecked(false);
     }
+    setComment("");
+    setShowComment(false);
   };
 
   return (
@@ -348,6 +354,23 @@ const MenuItem = ({ item, onAdd, lang, ui }) => {
       >
         {ui.addBtn}
       </button>
+      <div style={{ marginTop:"8px" }}>
+        <button
+          onClick={() => setShowComment(v => !v)}
+          style={{ background:"transparent", border:`1px dashed ${BG3}`, color:GOLDLT, fontSize:"12px", cursor:"pointer", fontFamily:"Georgia,serif", letterSpacing:"0.5px", padding:"5px 12px", borderRadius:"2px" }}
+        >
+          {showComment ? "✕ Sonderwunsch entfernen" : "✎ Sonderwunsch hinzufügen"}
+        </button>
+        {showComment && (
+          <textarea
+            value={comment}
+            onChange={e => setComment(e.target.value)}
+            placeholder="z.B. ohne Zwiebeln, medium rare …"
+            rows={2}
+            style={{ display:"block", marginTop:"6px", width:"100%", background:BG, border:`1px solid ${BG3}`, borderRadius:"2px", color:TEXT, fontFamily:"Georgia,serif", fontSize:"12px", padding:"8px 10px", outline:"none", resize:"none", boxSizing:"border-box", fontStyle:"italic" }}
+          />
+        )}
+      </div>
     </div>
   );
 };
@@ -726,7 +749,7 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
     orderReceived:"Ihre Bestellung wurde aufgenommen. Wir kümmern uns sofort darum.",
     back:"Zurück zur Karte", addBtn:"+ Bestellen", perPerson:"p.P.",
     restaurant:"Genussrestaurant", menu:"Speisekarte",
-    version:"v2.3",
+    version:"v2.4",
     note:"Bei Unverträglichkeiten & Allergien sprechen Sie uns bitte an. Wir beraten Sie gerne. Preise enthalten die gesetzliche MwSt."
   };
 
@@ -915,7 +938,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             </button>
           </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.3</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.4</div>
         </div>
       </main>
 
