@@ -339,11 +339,11 @@ const MenuItem = ({ item, onAdd, lang, ui }) => {
   );
 };
 
-const Cart = ({ cart, onRemove, onClose, onOrder, ui }) => {
+const Cart = ({ cart, onRemove, onClose, onOrder, onChangeQty, ui }) => {
   const total = cart.reduce((s, i) => s + (i.price || 0) * i.qty, 0);
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:50, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"flex-end", justifyContent:"center" }} onClick={onClose}>
-      <div style={{ background:BG2, width:"100%", maxWidth:"560px", borderRadius:"16px 16px 0 0", padding:"28px 24px", maxHeight:"80vh", display:"flex", flexDirection:"column", fontFamily:"Georgia,serif", border:`1px solid ${BG3}`, borderBottom:"none" }} onClick={e => e.stopPropagation()}>
+    <div style={{ position:"fixed", inset:0, zIndex:50, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }} onClick={onClose}>
+      <div style={{ background:BG2, width:"100%", maxWidth:"560px", borderRadius:"8px", padding:"28px 24px", maxHeight:"85vh", display:"flex", flexDirection:"column", fontFamily:"Georgia,serif", border:`1px solid ${BG3}` }} onClick={e => e.stopPropagation()}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
           <div style={{ fontSize:"20px", fontWeight:"bold", color:TEXT, letterSpacing:"2px", textTransform:"uppercase" }}>{ui.order}</div>
           <button onClick={onClose} style={{ background:"none", border:"none", fontSize:"22px", color:TEXTMUT, cursor:"pointer" }}>×</button>
@@ -354,13 +354,18 @@ const Cart = ({ cart, onRemove, onClose, onOrder, ui }) => {
           : <>
               <div style={{ overflowY:"auto", flex:1 }}>
                 {cart.map(item => (
-                  <div key={item.id + item.name} style={{ display:"flex", alignItems:"center", padding:"12px 0", borderBottom:`1px solid ${BG3}`, gap:"12px" }}>
+                  <div key={item.id + item.name} style={{ display:"flex", alignItems:"center", padding:"12px 0", borderBottom:`1px solid ${BG3}`, gap:"10px" }}>
                     <div style={{ flex:1 }}>
                       <div style={{ fontWeight:"bold", color:TEXT, fontSize:"14px" }}>{item.name}</div>
-                      <div style={{ color:TEXTMUT, fontSize:"12px", marginTop:"2px" }}>{item.qty} × {fmt(item.price || 0)}</div>
+                      <div style={{ color:TEXTMUT, fontSize:"12px", marginTop:"2px" }}>{fmt(item.price || 0)} / Stk.</div>
                     </div>
-                    <div style={{ fontWeight:"bold", color:GOLD, fontSize:"15px" }}>{fmt((item.price || 0) * item.qty)}</div>
-                    <button onClick={() => onRemove(item.id + item.name)} style={{ background:"none", border:`1px solid ${BG3}`, color:TEXTMUT, borderRadius:"50%", width:"28px", height:"28px", cursor:"pointer", fontSize:"14px", flexShrink:0 }}>×</button>
+                    <div style={{ display:"flex", alignItems:"center", gap:"8px", flexShrink:0 }}>
+                      <button onClick={() => onChangeQty(item.id + item.name, -1)} style={{ background:"transparent", border:`1px solid ${BG3}`, color:GOLD, borderRadius:"2px", width:"28px", height:"28px", cursor:"pointer", fontSize:"16px", lineHeight:1, display:"flex", alignItems:"center", justifyContent:"center" }}>−</button>
+                      <span style={{ color:TEXT, fontWeight:"bold", fontSize:"15px", minWidth:"20px", textAlign:"center" }}>{item.qty}</span>
+                      <button onClick={() => onChangeQty(item.id + item.name, +1)} style={{ background:"transparent", border:`1px solid ${BG3}`, color:GOLD, borderRadius:"2px", width:"28px", height:"28px", cursor:"pointer", fontSize:"16px", lineHeight:1, display:"flex", alignItems:"center", justifyContent:"center" }}>+</button>
+                    </div>
+                    <div style={{ fontWeight:"bold", color:GOLD, fontSize:"15px", minWidth:"60px", textAlign:"right" }}>{fmt((item.price || 0) * item.qty)}</div>
+                    <button onClick={() => onRemove(item.id + item.name)} style={{ background:"none", border:`1px solid ${BG3}`, color:TEXTMUT, borderRadius:"50%", width:"28px", height:"28px", cursor:"pointer", fontSize:"14px", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>×</button>
                   </div>
                 ))}
               </div>
@@ -512,8 +517,8 @@ const LastOrderModal = ({ onClose }) => {
   const timeStr = data ? new Date(data.time).toLocaleString("de-DE") : "";
 
   return (
-    <div style={{ position:"fixed", inset:0, zIndex:100, background:"rgba(0,0,0,0.82)", display:"flex", alignItems:"flex-end", justifyContent:"center" }} onClick={onClose}>
-      <div style={{ background:BG2, width:"100%", maxWidth:"560px", borderRadius:"16px 16px 0 0", padding:"28px 24px", maxHeight:"80vh", display:"flex", flexDirection:"column", fontFamily:"Georgia,serif", border:`1px solid ${BG3}`, borderBottom:"none" }} onClick={e => e.stopPropagation()}>
+    <div style={{ position:"fixed", inset:0, zIndex:100, background:"rgba(0,0,0,0.82)", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }} onClick={onClose}>
+      <div style={{ background:BG2, width:"100%", maxWidth:"560px", borderRadius:"8px", padding:"28px 24px", maxHeight:"85vh", display:"flex", flexDirection:"column", fontFamily:"Georgia,serif", border:`1px solid ${BG3}`, borderBottom:"none" }} onClick={e => e.stopPropagation()}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
           <div>
             <div style={{ fontSize:"11px", letterSpacing:"3px", textTransform:"uppercase", color:GOLD, marginBottom:"2px" }}>Letzte Bestellung</div>
@@ -607,6 +612,9 @@ export default function App() {
       : [...prev, { ...item, qty: 1 }];
   });
   const removeFromCart = key => setCart(prev => prev.filter(i => i.id + i.name !== key));
+  const changeQty = (key, delta) => setCart(prev =>
+    prev.map(i => i.id + i.name === key ? { ...i, qty: Math.max(1, i.qty + delta) } : i)
+  );
   const totalItems = cart.reduce((s, i) => s + i.qty, 0);
   const sendToTelegram = async (cartItems) => {
     const token = localStorage.getItem("tg_token") || "8556873591:AAEtuYkA6tO3i4W-AGbiQKDRL7mVk6Kah34";
@@ -731,11 +739,11 @@ _${new Date().toLocaleString("de-DE")}_`;
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.5</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.6</div>
         </div>
       </main>
 
-      {showCart && <Cart cart={cart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onOrder={handleOrder} ui={ui}/>}
+      {showCart && <Cart cart={cart} onRemove={removeFromCart} onChangeQty={changeQty} onClose={() => setShowCart(false)} onOrder={handleOrder} ui={ui}/>}
       {showSuccess && <OrderSuccess onClose={() => setShowSuccess(false)} ui={ui}/>}
       {showTgSettings && <TelegramSettings onClose={() => { setShowTgSettings(false); const t = parseInt(localStorage.getItem("tg_table")); if (t) setTableNumber(t); }}/>}
       {showTablePicker && <TablePicker current={tableNumber} onSelect={setTableNumber} onClose={() => setShowTablePicker(false)}/>}
