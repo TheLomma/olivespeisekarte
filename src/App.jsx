@@ -672,6 +672,28 @@ export default function App() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showLastOrder, setShowLastOrder] = useState(false);
   const [orderNote, setOrderNote] = useState("");
+  const [callStatus, setCallStatus] = useState("");
+
+  const callWaiter = async () => {
+    if (!tableNumber) { setCallStatus("notable"); setTimeout(() => setCallStatus(""), 3000); return; }
+    setCallStatus("sending");
+    const token = localStorage.getItem("tg_token") || "";
+    const chatId = localStorage.getItem("tg_chatid") || "";
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: `\uD83D\uDECE *Service-Anfrage*
+
+Tisch ${tableNumber} bittet um Service!
+
+_${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
+      });
+      const json = await res.json();
+      setCallStatus(json.ok ? "ok" : "error");
+    } catch(e) { setCallStatus("error"); }
+    setTimeout(() => setCallStatus(""), 3000);
+  };
 
   const ui = {
     cart:"Warenkorb", order:"Bestellung", empty:"Ihr Warenkorb ist leer.", total:"Gesamt",
@@ -753,12 +775,15 @@ _${new Date().toLocaleString("de-DE")}_`;
             </div>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"8px", flexShrink:0 }}>
               <button
-                onClick={toggleLang}
-                style={btnStyle({ fontSize:"10px", padding:"5px 12px" })}
-                onMouseEnter={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; }}
-                onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; }}
+                onClick={callWaiter}
+                style={btnStyle({ fontSize:"10px", padding:"5px 12px", background: callStatus==="ok" ? "#2d6a2d" : callStatus==="error"||callStatus==="notable" ? "#6a2d2d" : "transparent", borderColor: callStatus==="ok" ? "#4caf50" : callStatus==="error"||callStatus==="notable" ? "#f44336" : GOLD, color: callStatus ? TEXT : GOLD })}
+                onMouseEnter={e => { if (!callStatus) { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; } }}
+                onMouseLeave={e => { if (!callStatus) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; } }}
               >
-                {lang === "de" ? "🇬🇧 EN" : "🇩🇪 DE"}
+                {callStatus==="sending" ? "⏳" : callStatus==="ok" ? "✅ Gerufen!" : callStatus==="error" ? "❌ Fehler" : callStatus==="notable" ? "⚠️ Kein Tisch" : "🛎 Kellner rufen"}
+              </button>
+              <button
+                onClick={() => {}}  style={{ display:"none" }}>
               </button>
               <button
                 onClick={() => setShowLastOrder(true)}
@@ -831,8 +856,18 @@ _${new Date().toLocaleString("de-DE")}_`;
         <div style={{ marginTop:"48px", textAlign:"center" }}>
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
+          <div style={{ marginTop:"24px", textAlign:"center" }}>
+            <button
+              onClick={toggleLang}
+              style={btnStyle({ fontSize:"11px", padding:"8px 24px" })}
+              onMouseEnter={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; }}
+            >
+              {lang === "de" ? "🇬🇧 English" : "🇩🇪 Deutsch"}
+            </button>
+          </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.0</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.1</div>
         </div>
       </main>
 
