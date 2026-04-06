@@ -803,10 +803,7 @@ _${new Date().toLocaleString("de-DE")}_`;
                 title="Bestellhistorie" style={{ display:"none" }}>
               </button>
               <button
-                onClick={callWaiter}
-                style={btnStyle({ fontSize:"10px", padding:"5px 12px", background: callStatus==="ok" ? "#2d6a2d" : callStatus==="error"||callStatus==="notable" ? "#6a2d2d" : "transparent", borderColor: callStatus==="ok" ? "#4caf50" : callStatus==="error"||callStatus==="notable" ? "#f44336" : GOLD, color: callStatus ? TEXT : GOLD })}
-                onMouseEnter={e => { if (!callStatus) { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; } }}
-                onMouseLeave={e => { if (!callStatus) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; } }}
+                onClick={callWaiter} style={{ display:"none" }}
               >
                 {callStatus==="sending" ? "⏳" : callStatus==="ok" ? "✅ Gerufen!" : callStatus==="error" ? "❌ Fehler" : callStatus==="notable" ? "⚠️ Kein Tisch" : "🛎 Kellner rufen"}
               </button>
@@ -823,10 +820,7 @@ _${new Date().toLocaleString("de-DE")}_`;
               </button>
               </div>
               <button
-                onClick={requestBill}
-                style={btnStyle({ fontSize:"10px", padding:"5px 12px", ...(billStatus==="ok" ? { background:"#2d6a2d", borderColor:"#4caf50", color:TEXT } : billStatus==="error"||billStatus==="notable" ? { background:"#6a2d2d", borderColor:"#f44336", color:TEXT } : {}) })}
-                onMouseEnter={e => { if (!billStatus) { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; } }}
-                onMouseLeave={e => { if (!billStatus) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; } }}
+                onClick={requestBill} style={{ display:"none" }}
               >
                 {billStatus==="sending" ? "⏳" : billStatus==="ok" ? "✅ Angefordert!" : billStatus==="error" ? "❌ Fehler" : billStatus==="notable" ? "⚠️ Kein Tisch" : "💳 Rechnung"}
               </button>
