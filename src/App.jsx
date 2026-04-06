@@ -674,6 +674,29 @@ export default function App() {
   const [orderNote, setOrderNote] = useState("");
   const [callStatus, setCallStatus] = useState("");
 
+  const [billStatus, setBillStatus] = useState("");
+
+  const requestBill = async () => {
+    if (!tableNumber) { setBillStatus("notable"); setTimeout(() => setBillStatus(""), 3000); return; }
+    setBillStatus("sending");
+    const token = localStorage.getItem("tg_token") || "";
+    const chatId = localStorage.getItem("tg_chatid") || "";
+    try {
+      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text: `💳 *Rechnungsanfrage*
+
+Tisch ${tableNumber} m\u00f6chte bitte zahlen!
+
+_${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
+      });
+      const json = await res.json();
+      setBillStatus(json.ok ? "ok" : "error");
+    } catch(e) { setBillStatus("error"); }
+    setTimeout(() => setBillStatus(""), 3000);
+  };
+
   const callWaiter = async () => {
     if (!tableNumber) { setCallStatus("notable"); setTimeout(() => setCallStatus(""), 3000); return; }
     setCallStatus("sending");
@@ -774,6 +797,11 @@ _${new Date().toLocaleString("de-DE")}_`;
               <div style={{ fontSize:"10px", letterSpacing:"3px", color:TEXTMUT, marginTop:"2px", textTransform:"uppercase" }}>{ui.menu}</div>
             </div>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"8px", flexShrink:0 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+              <button
+                onClick={() => setShowLastOrder(true)}
+                title="Bestellhistorie" style={{ display:"none" }}>
+              </button>
               <button
                 onClick={callWaiter}
                 style={btnStyle({ fontSize:"10px", padding:"5px 12px", background: callStatus==="ok" ? "#2d6a2d" : callStatus==="error"||callStatus==="notable" ? "#6a2d2d" : "transparent", borderColor: callStatus==="ok" ? "#4caf50" : callStatus==="error"||callStatus==="notable" ? "#f44336" : GOLD, color: callStatus ? TEXT : GOLD })}
@@ -791,7 +819,16 @@ _${new Date().toLocaleString("de-DE")}_`;
                 onMouseEnter={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; }}
               >
-                ↻ Letzte Bestellung
+                ↻
+              </button>
+              </div>
+              <button
+                onClick={requestBill}
+                style={btnStyle({ fontSize:"10px", padding:"5px 12px", ...(billStatus==="ok" ? { background:"#2d6a2d", borderColor:"#4caf50", color:TEXT } : billStatus==="error"||billStatus==="notable" ? { background:"#6a2d2d", borderColor:"#f44336", color:TEXT } : {}) })}
+                onMouseEnter={e => { if (!billStatus) { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; } }}
+                onMouseLeave={e => { if (!billStatus) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; } }}
+              >
+                {billStatus==="sending" ? "⏳" : billStatus==="ok" ? "✅ Angefordert!" : billStatus==="error" ? "❌ Fehler" : billStatus==="notable" ? "⚠️ Kein Tisch" : "💳 Rechnung"}
               </button>
               <button
                 onClick={() => setShowCart(true)}
