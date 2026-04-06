@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v2.4";
+const VERSION = "v2.5";
 
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
@@ -301,7 +301,7 @@ const MenuItem = ({ item, onAdd, lang, ui }) => {
   };
 
   return (
-    <div style={{ marginBottom:"22px" }}>
+    <div style={{ paddingBottom:"20px", marginBottom:"0", borderBottom:`1px solid ${BG3}`, marginTop:"40px" }}>
       {item.headline && (
         <div style={{ fontSize:"10px", letterSpacing:"3px", textTransform:"uppercase", color:GOLDLT, marginBottom:"4px" }}>
           {t(item.headline, lang)}
@@ -749,7 +749,7 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
     orderReceived:"Ihre Bestellung wurde aufgenommen. Wir kümmern uns sofort darum.",
     back:"Zurück zur Karte", addBtn:"+ Bestellen", perPerson:"p.P.",
     restaurant:"Genussrestaurant", menu:"Speisekarte",
-    version:"v2.4",
+    version:"v2.5",
     note:"Bei Unverträglichkeiten & Allergien sprechen Sie uns bitte an. Wir beraten Sie gerne. Preise enthalten die gesetzliche MwSt."
   };
 
@@ -905,7 +905,7 @@ _${new Date().toLocaleString("de-DE")}_`;
         )}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:"0 48px" }}>
           {cat.items.map(item => (
-            <div key={item.id} style={{ borderBottom:`1px solid ${BG3}`, paddingBottom:"2px" }}>
+            <div key={item.id} style={{ paddingBottom:"0" }}>
               <MenuItem item={item} onAdd={addToCart} lang={lang} ui={ui}/>
             </div>
           ))}
@@ -938,7 +938,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             </button>
           </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.4</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.5</div>
         </div>
       </main>
 
