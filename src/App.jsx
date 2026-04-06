@@ -393,6 +393,33 @@ const OrderSuccess = ({ onClose, ui }) => (
 );
 
 
+const TablePicker = ({ current, onSelect, onClose }) => (
+  <div style={{ position:"fixed", inset:0, zIndex:100, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center" }} onClick={onClose}>
+    <div style={{ background:BG2, border:`1px solid ${GOLD}`, borderRadius:"4px", padding:"36px 32px", width:"90%", maxWidth:"380px", fontFamily:"Georgia,serif" }} onClick={e => e.stopPropagation()}>
+      <div style={{ fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase", color:GOLD, marginBottom:"4px" }}>Einstellungen</div>
+      <div style={{ fontSize:"20px", fontWeight:"bold", color:TEXT, marginBottom:"6px" }}>Tischnummer</div>
+      <GoldDivider/>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:"10px", marginBottom:"24px" }}>
+        {[1,2,3,4,5,6,7,8,9,10].map(n => (
+          <button key={n} onClick={() => { onSelect(n); onClose(); }}
+            style={{
+              padding:"14px 0", borderRadius:"2px",
+              border:`1px solid ${current === n ? GOLD : BG3}`,
+              background: current === n ? `${GOLD}33` : "transparent",
+              color: current === n ? GOLD : TEXTMUT,
+              fontFamily:"Georgia,serif", fontSize:"16px", fontWeight:"bold",
+              cursor:"pointer", transition:"all .2s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}22`; e.currentTarget.style.color = GOLD; }}
+            onMouseLeave={e => { e.currentTarget.style.background = current === n ? `${GOLD}33` : "transparent"; e.currentTarget.style.color = current === n ? GOLD : TEXTMUT; }}
+          >{n}</button>
+        ))}
+      </div>
+      <button onClick={onClose} style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"2px", padding:"12px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px" }}>Schließen</button>
+    </div>
+  </div>
+);
+
 const TelegramSettings = ({ onClose }) => {
   const [botToken, setBotToken] = useState(localStorage.getItem("tg_token") || "8556873591:AAEtuYkA6tO3i4W-AGbiQKDRL7mVk6Kah34");
   const [chatId, setChatId] = useState(localStorage.getItem("tg_chatid") || "8792112920");
@@ -478,6 +505,10 @@ export default function App() {
     }
   };
   const [cart, setCart] = useState([]);
+  const [tableNumber, setTableNumber] = useState(null);
+  const [showTablePicker, setShowTablePicker] = useState(false);
+  const [cartClicks, setCartClicks] = useState(0);
+  const cartClickTimer = React.useRef(null);
   const [showCart, setShowCart] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
@@ -500,15 +531,16 @@ export default function App() {
   const removeFromCart = key => setCart(prev => prev.filter(i => i.id + i.name !== key));
   const totalItems = cart.reduce((s, i) => s + i.qty, 0);
   const sendToTelegram = async (cartItems) => {
-    const token = localStorage.getItem("tg_token");
-    const chatId = localStorage.getItem("tg_chatid");
+    const token = localStorage.getItem("tg_token") || "8556873591:AAEtuYkA6tO3i4W-AGbiQKDRL7mVk6Kah34";
+    const chatId = localStorage.getItem("tg_chatid") || "8792112920";
     if (!token || !chatId) return;
     const total = cartItems.reduce((s, i) => s + (i.price || 0) * i.qty, 0);
     const lines = cartItems.map(i =>
       `• ${i.name}
   ${i.qty} × ${fmt(i.price || 0)} = ${fmt((i.price || 0) * i.qty)}`
     ).join("\n");
-    const msg = `🍽 *Neue Bestellung – Hopmanns Olive*
+    const tischInfo = tableNumber ? `Bestellung für Tisch ${tableNumber}` : "Bestellung (kein Tisch gewählt)";
+    const msg = `🍽 *${tischInfo} – Hopmanns Olive*
 
 ${lines}
 
@@ -548,7 +580,18 @@ _${new Date().toLocaleString("de-DE")}_`;
             </div>
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:"8px", flexShrink:0 }}>
               <button
-                onClick={() => setShowCart(true)}
+                onClick={() => {
+                  const next = cartClicks + 1;
+                  setCartClicks(next);
+                  if (cartClickTimer.current) clearTimeout(cartClickTimer.current);
+                  if (next >= 5) {
+                    setShowTablePicker(true);
+                    setCartClicks(0);
+                  } else {
+                    cartClickTimer.current = setTimeout(() => setCartClicks(0), 2000);
+                    setShowCart(true);
+                  }
+                }}
                 style={{ ...btnStyle(), position:"relative", padding:"8px 14px", display:"flex", alignItems:"center", gap:"8px" }}
                 onMouseEnter={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; }}
                 onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; }}
@@ -558,7 +601,7 @@ _${new Date().toLocaleString("de-DE")}_`;
                   <line x1="3" y1="6" x2="21" y2="6"/>
                   <path d="M16 10a4 4 0 01-8 0"/>
                 </svg>
-                <span>{ui.cart}</span>
+                <span>{ui.cart}{tableNumber ? ` · Tisch ${tableNumber}` : ""}</span>
                 {totalItems > 0 && (
                   <span style={{ position:"absolute", top:"-8px", right:"-8px", background:GOLD, color:BG, borderRadius:"50%", width:"20px", height:"20px", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"11px", fontWeight:"bold" }}>{totalItems}</span>
                 )}
@@ -611,13 +654,14 @@ _${new Date().toLocaleString("de-DE")}_`;
           <GoldDivider/>
           <p style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", letterSpacing:"0.5px", lineHeight:1.8 }}>{ui.note}</p>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.2</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 1.3</div>
         </div>
       </main>
 
       {showCart && <Cart cart={cart} onRemove={removeFromCart} onClose={() => setShowCart(false)} onOrder={handleOrder} ui={ui}/>}
       {showSuccess && <OrderSuccess onClose={() => setShowSuccess(false)} ui={ui}/>}
       {showTgSettings && <TelegramSettings onClose={() => setShowTgSettings(false)}/>}
+      {showTablePicker && <TablePicker current={tableNumber} onSelect={setTableNumber} onClose={() => setShowTablePicker(false)}/>}
     </div>
   );
 }
