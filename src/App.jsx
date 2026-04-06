@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v2.5";
+const VERSION = "v2.6";
 
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
@@ -749,7 +749,7 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
     orderReceived:"Ihre Bestellung wurde aufgenommen. Wir kümmern uns sofort darum.",
     back:"Zurück zur Karte", addBtn:"+ Bestellen", perPerson:"p.P.",
     restaurant:"Genussrestaurant", menu:"Speisekarte",
-    version:"v2.5",
+    version:"v2.6",
     note:"Bei Unverträglichkeiten & Allergien sprechen Sie uns bitte an. Wir beraten Sie gerne. Preise enthalten die gesetzliche MwSt."
   };
 
@@ -831,7 +831,7 @@ _${new Date().toLocaleString("de-DE")}_`;
               <button
                 onClick={callWaiter} style={{ display:"none" }}
               >
-                {callStatus==="sending" ? "⏳" : callStatus==="ok" ? "✅ Gerufen!" : callStatus==="error" ? "❌ Fehler" : callStatus==="notable" ? "⚠️ Kein Tisch" : "🛎 Kellner rufen"}
+                {callStatus==="sending" ? "⏳" : callStatus==="ok" ? "✅ Gerufen!" : callStatus==="error" ? "❌ Fehler" : callStatus==="notable" ? "⚠️ Kein Tisch" : "🛎 Service rufen"}
               </button>
               <button
                 onClick={() => {}}  style={{ display:"none" }}>
@@ -919,7 +919,7 @@ _${new Date().toLocaleString("de-DE")}_`;
                 onClick={callWaiter}
                 style={btnStyle({ fontSize:"11px", padding:"8px 20px", borderColor: callStatus==="ok" ? "#4caf50" : callStatus==="error" ? "#f44336" : GOLD, color: callStatus==="ok" ? "#4caf50" : callStatus==="error" ? "#f44336" : GOLD })}
               >
-                {callStatus==="sending" ? "⏳ …" : callStatus==="ok" ? "✅ Gerufen!" : callStatus==="error" ? "❌ Fehler" : callStatus==="notable" ? "⚠️ Kein Tisch" : "🛎 Kellner rufen"}
+                {callStatus==="sending" ? "⏳ …" : callStatus==="ok" ? "✅ Gerufen!" : callStatus==="error" ? "❌ Fehler" : callStatus==="notable" ? "⚠️ Kein Tisch" : "🛎 Service rufen"}
               </button>
               <button
                 onClick={requestBill}
@@ -938,7 +938,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             </button>
           </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.5</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 2.6</div>
         </div>
       </main>
 
