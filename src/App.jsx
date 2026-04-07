@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v3.4";
+const VERSION = "v3.5";
 
   // ── MODUS-WAHL STARTSCREEN ────────────────────────────────────
   const SERVICE_PIN = "1234";
@@ -263,8 +263,112 @@ const VERSION = "v3.4";
     </div>
   );
 
+  const HELP_CONTENT = {
+    de: {
+      title: "Anleitung",
+      subtitle: "Digitale Speisekarte · Hopmanns Olive",
+      gast: {
+        label: "🍽 Gast-Modus",
+        desc: "Für Gäste am Tisch – keine PIN erforderlich.",
+        features: [
+          ["📋 Speisekarte", "Alle Kategorien (Vorspeisen, Hauptspeisen, Steaks, Dessert, Menüs) mit Beschreibungen und Preisen."],
+          ["🌍 Sprache wechseln", "Speisekarte auf Deutsch, Englisch, Niederländisch oder Türkisch anzeigen."],
+          ["🛒 Warenkorb", "Gerichte auswählen, Mengen anpassen und Sonderwünsche hinzufügen."],
+          ["📦 Bestellung aufgeben", "Bestellung direkt per Telegram an das Service-Team senden."],
+          ["🛎 Service rufen", "Mit einem Tipp das Servicepersonal an den Tisch rufen."],
+          ["💳 Rechnung anfordern", "Rechnung bequem per Knopfdruck anfordern."],
+          ["🔢 Tischnummer", "Tischnummer am Anfang auswählen – wird automatisch bei jeder Bestellung übermittelt."],
+        ],
+      },
+      service: {
+        label: "👨‍🍳 Service-Modus",
+        desc: "Für das Servicepersonal – PIN-geschützt.",
+        features: [
+          ["🔐 PIN-Schutz", "Zugang nur mit vierstelligem PIN – verhindert unbeabsichtigte Nutzung durch Gäste."],
+          ["🪑 Tisch wählen", "Bestellung einem bestimmten Tisch (1–10) zuordnen."],
+          ["📝 Bestellung erfassen", "Gerichte für Gäste auswählen und direkt als Bestellung absenden."],
+          ["📡 Telegram-Übertragung", "Bestellungen werden sofort per Telegram an die Küche/Bar weitergeleitet."],
+          ["⚙️ Telegram-Einstellungen", "Bot-Token und Chat-ID konfigurieren sowie Testverbindung senden."],
+          ["🔄 Modus wechseln", "Jederzeit zwischen Gast- und Service-Modus wechseln."],
+        ],
+      },
+    },
+    en: {
+      title: "User Guide",
+      subtitle: "Digital Menu · Hopmanns Olive",
+      gast: {
+        label: "🍽 Guest Mode",
+        desc: "For guests at the table – no PIN required.",
+        features: [
+          ["📋 Menu", "All categories (starters, mains, steaks, desserts, set menus) with descriptions and prices."],
+          ["🌍 Language", "Switch between German, English, Dutch and Turkish."],
+          ["🛒 Cart", "Select dishes, adjust quantities and add special requests."],
+          ["📦 Place Order", "Send your order directly to the service team via Telegram."],
+          ["🛎 Call Service", "Tap to call a member of staff to your table."],
+          ["💳 Request Bill", "Request the bill with a single tap."],
+          ["🔢 Table Number", "Select your table at the start – automatically included with every order."],
+        ],
+      },
+      service: {
+        label: "👨‍🍳 Service Mode",
+        desc: "For staff only – PIN protected.",
+        features: [
+          ["🔐 PIN Protection", "Access requires a four-digit PIN – prevents accidental use by guests."],
+          ["🪑 Select Table", "Assign an order to a specific table (1–10)."],
+          ["📝 Take Order", "Select dishes for guests and send the order immediately."],
+          ["📡 Telegram Transfer", "Orders are forwarded instantly to the kitchen/bar via Telegram."],
+          ["⚙️ Telegram Settings", "Configure bot token and chat ID, and send a test message."],
+          ["🔄 Switch Mode", "Switch between guest and service mode at any time."],
+        ],
+      },
+    },
+  };
+
+  const HelpModal = ({ onClose }) => {
+    const [helpLang, setHelpLang] = React.useState("de");
+    const h = HELP_CONTENT[helpLang];
+    const Section = ({ data }) => (
+      <div style={{ marginBottom:"28px" }}>
+        <div style={{ fontSize:"13px", letterSpacing:"3px", textTransform:"uppercase", color:GOLD, fontWeight:"bold", marginBottom:"4px" }}>{data.label}</div>
+        <div style={{ fontSize:"12px", color:TEXTMUT, fontStyle:"italic", marginBottom:"14px" }}>{data.desc}</div>
+        {data.features.map(([title, desc], i) => (
+          <div key={i} style={{ marginBottom:"12px", paddingLeft:"12px", borderLeft:`2px solid ${BG3}` }}>
+            <div style={{ fontSize:"13px", fontWeight:"bold", color:TEXT, marginBottom:"2px" }}>{title}</div>
+            <div style={{ fontSize:"12px", color:TEXTMUT, lineHeight:1.6 }}>{desc}</div>
+          </div>
+        ))}
+      </div>
+    );
+    return (
+      <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }} onClick={onClose}>
+        <div style={{ background:BG2, border:`1px solid ${GOLD}`, borderRadius:"4px", width:"100%", maxWidth:"480px", maxHeight:"88vh", display:"flex", flexDirection:"column", fontFamily:"Georgia,serif" }} onClick={e => e.stopPropagation()}>
+          <div style={{ padding:"28px 28px 0" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+              <div>
+                <div style={{ fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase", color:GOLD, marginBottom:"4px" }}>{h.subtitle}</div>
+                <div style={{ fontSize:"22px", fontWeight:"bold", color:TEXT }}>{h.title}</div>
+              </div>
+              <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
+                <button onClick={() => setHelpLang("de")} style={{ background: helpLang==="de" ? GOLD : "transparent", color: helpLang==="de" ? BG : TEXTMUT, border:`1px solid ${helpLang==="de" ? GOLD : BG3}`, borderRadius:"2px", padding:"5px 10px", fontFamily:"Georgia,serif", fontSize:"11px", cursor:"pointer", letterSpacing:"1px" }}>DE</button>
+                <button onClick={() => setHelpLang("en")} style={{ background: helpLang==="en" ? GOLD : "transparent", color: helpLang==="en" ? BG : TEXTMUT, border:`1px solid ${helpLang==="en" ? GOLD : BG3}`, borderRadius:"2px", padding:"5px 10px", fontFamily:"Georgia,serif", fontSize:"11px", cursor:"pointer", letterSpacing:"1px" }}>EN</button>
+                <button onClick={onClose} style={{ background:"transparent", border:"none", color:TEXTMUT, fontSize:"22px", cursor:"pointer", lineHeight:1, marginLeft:"6px" }}>×</button>
+              </div>
+            </div>
+            <GoldDivider/>
+          </div>
+          <div style={{ overflowY:"auto", padding:"0 28px 28px", flex:1 }}>
+            <Section data={h.gast}/>
+            <div style={{ height:"1px", background:`linear-gradient(to right, transparent, ${GOLD}50, transparent)`, margin:"4px 0 24px" }}/>
+            <Section data={h.service}/>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const ModeSelector = ({ onSelect }) => {
     const [showPin, setShowPin] = React.useState(false);
+    const [showHelp, setShowHelp] = React.useState(false);
     return (
       <div style={{ position:"fixed", inset:0, zIndex:200, background:BG, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"Georgia,serif", padding:"32px" }}>
         <HopmannsLogo size={88}/>
@@ -292,7 +396,14 @@ const VERSION = "v3.4";
             <div style={{ fontSize:"13px", color:TEXTMUT, lineHeight:1.6 }}>Bestellungen für Tische & Plätze erfassen</div>
           </button>
         </div>
-        <div style={{ marginTop:"40px", fontSize:"10px", color:TEXTMUT, opacity:0.4, letterSpacing:"1px" }}>{VERSION}</div>
+        <button
+          onClick={() => setShowHelp(true)}
+          style={{ marginTop:"24px", background:"transparent", border:`1px solid ${BG3}`, color:TEXTMUT, borderRadius:"2px", padding:"9px 24px", fontFamily:"Georgia,serif", fontSize:"11px", cursor:"pointer", letterSpacing:"2px", textTransform:"uppercase" }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = GOLD; e.currentTarget.style.color = GOLD; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = BG3; e.currentTarget.style.color = TEXTMUT; }}
+        >? Anleitung</button>
+        <div style={{ marginTop:"16px", fontSize:"10px", color:TEXTMUT, opacity:0.4, letterSpacing:"1px" }}>{VERSION}</div>
+        {showHelp && <HelpModal onClose={() => setShowHelp(false)} />}
         {showPin && <PinModal onSuccess={() => { setShowPin(false); onSelect("service"); }} onCancel={() => setShowPin(false)} />}
       </div>
     );
