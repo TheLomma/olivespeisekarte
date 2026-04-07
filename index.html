@@ -3,18 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- PWA / Theme -->
     <meta name="theme-color" content="#b8975a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Hopmanns" />
+
+    <!-- Icons -->
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+
+    <!-- Manifest -->
     <link rel="manifest" href="/manifest.json" />
+
     <title>Hopmanns Olive</title>
   </head>
   <body style="margin:0; padding:0; background:#1a1a18;">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Service Worker registrieren -->
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/service-worker.js")
+            .then((reg) => {
+              console.log("SW registriert:", reg.scope);
+            })
+            .catch((err) => {
+              console.warn("SW Fehler:", err);
+            });
+        });
+      }
+    </script>
   </body>
 </html>
