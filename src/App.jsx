@@ -181,36 +181,99 @@ const CATEGORIES_DATA = [
 const VERSION = "v3.2";
 
   // ── MODUS-WAHL STARTSCREEN ────────────────────────────────────
-  const ModeSelector = ({ onSelect }) => (
-    <div style={{ position:"fixed", inset:0, zIndex:200, background:BG, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"Georgia,serif", padding:"32px" }}>
-      <HopmannsLogo size={88}/>
-      <div style={{ marginTop:"28px", fontSize:"11px", letterSpacing:"5px", textTransform:"uppercase", color:GOLD }}>Willkommen</div>
-      <div style={{ marginTop:"8px", fontSize:"clamp(22px,5vw,30px)", fontWeight:"bold", letterSpacing:"4px", color:TEXT, textTransform:"uppercase" }}>Hopmanns Olive</div>
-      <GoldDivider/>
-      <div style={{ marginTop:"8px", fontSize:"13px", color:TEXTMUT, marginBottom:"36px", textAlign:"center", letterSpacing:"0.5px" }}>Bitte wählen Sie Ihren Modus</div>
-      <div style={{ display:"flex", flexDirection:"column", gap:"16px", width:"100%", maxWidth:"340px" }}>
-        <button
-          onClick={() => onSelect("gast")}
-          style={{ background:"transparent", border:`1px solid ${GOLD}`, borderRadius:"2px", padding:"20px 24px", cursor:"pointer", fontFamily:"Georgia,serif", textAlign:"left", transition:"all .2s" }}
-          onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}18`; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-        >
-          <div style={{ fontSize:"13px", letterSpacing:"3px", textTransform:"uppercase", color:GOLD, marginBottom:"6px" }}>🍽 Gast-Modus</div>
-          <div style={{ fontSize:"13px", color:TEXTMUT, lineHeight:1.6 }}>Speisekarte ansehen & Bestellungen aufgeben</div>
-        </button>
-        <button
-          onClick={() => onSelect("service")}
-          style={{ background:"transparent", border:`1px solid ${BG3}`, borderRadius:"2px", padding:"20px 24px", cursor:"pointer", fontFamily:"Georgia,serif", textAlign:"left", transition:"all .2s" }}
-          onMouseEnter={e => { e.currentTarget.style.background = `${BG3}88`; }}
-          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-        >
-          <div style={{ fontSize:"13px", letterSpacing:"3px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"6px" }}>👨‍🍳 Service-Modus</div>
-          <div style={{ fontSize:"13px", color:TEXTMUT, lineHeight:1.6 }}>Bestellungen für Tische & Plätze erfassen</div>
-        </button>
+  const SERVICE_PIN = "1234";
+
+  const PinModal = ({ onSuccess, onCancel }) => {
+    const [pin, setPin] = React.useState("");
+    const [error, setError] = React.useState(false);
+
+    const handleDigit = (d) => {
+      if (pin.length >= 4) return;
+      const next = pin + d;
+      setPin(next);
+      if (next.length === 4) {
+        if (next === SERVICE_PIN) {
+          onSuccess();
+        } else {
+          setError(true);
+          setTimeout(() => { setPin(""); setError(false); }, 700);
+        }
+      }
+    };
+
+    const handleDelete = () => setPin(p => p.slice(0, -1));
+
+    return (
+      <div style={{ position:"fixed", inset:0, zIndex:300, background:"rgba(0,0,0,0.92)", display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"Georgia,serif" }}>
+        <div style={{ background:BG2, border:`1px solid ${GOLD}`, borderRadius:"4px", padding:"40px 32px", width:"90%", maxWidth:"340px", textAlign:"center" }}>
+          <div style={{ fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase", color:GOLD, marginBottom:"8px" }}>Service-Modus</div>
+          <div style={{ fontSize:"18px", fontWeight:"bold", color:TEXT, marginBottom:"6px" }}>PIN eingeben</div>
+          <GoldDivider/>
+          <div style={{ display:"flex", justifyContent:"center", gap:"14px", margin:"24px 0" }}>
+            {[0,1,2,3].map(i => (
+              <div key={i} style={{ width:"18px", height:"18px", borderRadius:"50%", border:`2px solid ${error ? "#f44336" : GOLD}`, background: pin.length > i ? (error ? "#f44336" : GOLD) : "transparent", transition:"all .2s" }}/>
+            ))}
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:"10px", marginBottom:"10px" }}>
+            {[1,2,3,4,5,6,7,8,9].map(d => (
+              <button key={d} onClick={() => handleDigit(String(d))}
+                style={{ padding:"18px", fontSize:"20px", fontFamily:"Georgia,serif", fontWeight:"bold", color:TEXT, background:BG3, border:`1px solid ${BG3}`, borderRadius:"4px", cursor:"pointer", transition:"all .15s" }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = GOLD}
+                onMouseLeave={e => e.currentTarget.style.borderColor = BG3}
+              >{d}</button>
+            ))}
+            <button onClick={onCancel}
+              style={{ padding:"18px", fontSize:"13px", fontFamily:"Georgia,serif", color:TEXTMUT, background:"transparent", border:`1px solid ${BG3}`, borderRadius:"4px", cursor:"pointer" }}
+            >✕</button>
+            <button onClick={() => handleDigit("0")}
+              style={{ padding:"18px", fontSize:"20px", fontFamily:"Georgia,serif", fontWeight:"bold", color:TEXT, background:BG3, border:`1px solid ${BG3}`, borderRadius:"4px", cursor:"pointer", transition:"all .15s" }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = GOLD}
+              onMouseLeave={e => e.currentTarget.style.borderColor = BG3}
+            >0</button>
+            <button onClick={handleDelete}
+              style={{ padding:"18px", fontSize:"18px", fontFamily:"Georgia,serif", color:TEXTMUT, background:"transparent", border:`1px solid ${BG3}`, borderRadius:"4px", cursor:"pointer" }}
+            >⌫</button>
+          </div>
+          {error && <div style={{ color:"#f44336", fontSize:"13px", marginTop:"8px", fontStyle:"italic" }}>Falscher PIN</div>}
+        </div>
       </div>
-      <div style={{ marginTop:"40px", fontSize:"10px", color:TEXTMUT, opacity:0.4, letterSpacing:"1px" }}>{VERSION}</div>
-    </div>
-  );
+    );
+  };
+
+  const ModeSelector = ({ onSelect }) => {
+    const [showPin, setShowPin] = React.useState(false);
+    return (
+      <div style={{ position:"fixed", inset:0, zIndex:200, background:BG, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"Georgia,serif", padding:"32px" }}>
+        <HopmannsLogo size={88}/>
+        <div style={{ marginTop:"28px", fontSize:"11px", letterSpacing:"5px", textTransform:"uppercase", color:GOLD }}>Willkommen</div>
+        <div style={{ marginTop:"8px", fontSize:"clamp(22px,5vw,30px)", fontWeight:"bold", letterSpacing:"4px", color:TEXT, textTransform:"uppercase" }}>Hopmanns Olive</div>
+        <GoldDivider/>
+        <div style={{ marginTop:"8px", fontSize:"13px", color:TEXTMUT, marginBottom:"36px", textAlign:"center", letterSpacing:"0.5px" }}>Bitte wählen Sie Ihren Modus</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:"16px", width:"100%", maxWidth:"340px" }}>
+          <button
+            onClick={() => onSelect("gast")}
+            style={{ background:"transparent", border:`1px solid ${GOLD}`, borderRadius:"2px", padding:"20px 24px", cursor:"pointer", fontFamily:"Georgia,serif", textAlign:"left", transition:"all .2s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}18`; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <div style={{ fontSize:"13px", letterSpacing:"3px", textTransform:"uppercase", color:GOLD, marginBottom:"6px" }}>🍽 Gast-Modus</div>
+            <div style={{ fontSize:"13px", color:TEXTMUT, lineHeight:1.6 }}>Speisekarte ansehen & Bestellungen aufgeben</div>
+          </button>
+          <button
+            onClick={() => setShowPin(true)}
+            style={{ background:"transparent", border:`1px solid ${BG3}`, borderRadius:"2px", padding:"20px 24px", cursor:"pointer", fontFamily:"Georgia,serif", textAlign:"left", transition:"all .2s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = `${BG3}88`; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+          >
+            <div style={{ fontSize:"13px", letterSpacing:"3px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"6px" }}>👨‍🍳 Service-Modus</div>
+            <div style={{ fontSize:"13px", color:TEXTMUT, lineHeight:1.6 }}>Bestellungen für Tische & Plätze erfassen</div>
+          </button>
+        </div>
+        <div style={{ marginTop:"40px", fontSize:"10px", color:TEXTMUT, opacity:0.4, letterSpacing:"1px" }}>{VERSION}</div>
+        {showPin && <PinModal onSuccess={() => { setShowPin(false); onSelect("service"); }} onCancel={() => setShowPin(false)} />}
+      </div>
+    );
+  };
 
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
@@ -951,6 +1014,7 @@ export default function App() {
   }, []);
 
   const [appMode, setAppMode] = useState(() => localStorage.getItem("app_mode") || null);
+    const [showPinModal, setShowPinModal] = useState(false);
     const switchMode = (mode) => {
       if (mode === null) { localStorage.removeItem("app_mode"); } else { localStorage.setItem("app_mode", mode); }
       setAppMode(mode);
@@ -1234,9 +1298,10 @@ _${new Date().toLocaleString("de-DE")}_`;
 
       {showCart && <Cart cart={cart} onRemove={removeFromCart} onChangeQty={changeQty} onClose={() => setShowCart(false)} onOrder={handleOrder} onNoteChange={setOrderNote} note={orderNote} ui={ui}/>}
       {showSuccess && <OrderSuccess onClose={() => setShowSuccess(false)} ui={ui}/>}
-      {showTgSettings && <TelegramSettings
+      {showPinModal && <PinModal onSuccess={() => { setShowPinModal(false); switchMode("service"); }} onCancel={() => setShowPinModal(false)} />}
+        {showTgSettings && <TelegramSettings
           onSwitchMode={(mode) => { setShowTgSettings(false); switchMode(mode); }}
-          onOpenServiceMode={() => { setShowTgSettings(false); switchMode("service"); }}
+          onOpenServiceMode={() => { setShowTgSettings(false); setShowPinModal(true); }}
           onClose={() => { setShowTgSettings(false); const tbl = parseInt(localStorage.getItem("tg_table")); if (tbl) setTableNumber(tbl); }}
         />}
       {showTablePicker && <TablePicker current={tableNumber} onSelect={setTableNumber} onClose={() => setShowTablePicker(false)}/>}
