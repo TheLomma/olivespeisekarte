@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v3.0";
+const VERSION = "v3.1";
 
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
@@ -606,13 +606,15 @@ const ServiceMode = ({ onClose }) => {
     { id:"vorspeisen", label:"Vorspeise" },
     { id:"hauptspeisen", label:"Hauptgericht" },
     { id:"dessert", label:"Dessert" },
-    { id:"menues", label:"Menü" },
+    { id:"menues", label:"Menu" },
   ];
   const [table, setTable] = useState("");
   const [seats, setSeats] = useState([{ id: 1, courses: [] }]);
   const [sendStatus, setSendStatus] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
 
+  const resetOrder = () => { setTable(""); setSeats([{ id: 1, courses: [] }]); setSendStatus(""); setShowPreview(false); setShowResetConfirm(false); };
   const addSeat = () => setSeats(prev => [...prev, { id: prev.length + 1, courses: [] }]);
   const removeSeat = idx => setSeats(prev => prev.filter((_, i) => i !== idx));
   const addCourse = (seatIdx, catId) => setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : { ...s, courses: [...s.courses, { catId, item: null, variant: 0, note: "" }] }));
@@ -644,21 +646,21 @@ const ServiceMode = ({ onClose }) => {
     setSendStatus("sending");
     const total = calcTotal();
     const textLines = buildLines().map(s => {
-      const cl = s.courses.map(c => `    [${c.gangLabel}] ${c.name}${c.varLabel ? " – " + c.varLabel : ""}${c.note ? " [" + c.note + "]" : ""} · ${fmt(c.price)}`).join("\n");
+      const cl = s.courses.map(c => `    [${c.gangLabel}] ${c.name}${c.varLabel ? " - " + c.varLabel : ""}${c.note ? " [" + c.note + "]" : ""} - ${fmt(c.price)}`).join("\n");
       return `Platz ${s.seat}:
 ${cl}`;
     }).join("\n\n");
-    const msg = `🍽 *Service-Bestellung – Tisch ${table}*
-*Gesamt: ${fmt(total)}*
+    const msg = `Service-Bestellung - Tisch ${table}
+Gesamt: ${fmt(total)}
 
 ${textLines}
 
-_${new Date().toLocaleString("de-DE")}_`;
+${new Date().toLocaleString("de-DE")}`;
     try {
       const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: "Markdown" }),
+        body: JSON.stringify({ chat_id: chatId, text: msg }),
       });
       const json = await res.json();
       setSendStatus(json.ok ? "ok" : "error");
@@ -669,19 +671,34 @@ _${new Date().toLocaleString("de-DE")}_`;
   const fieldStyle = { width:"100%", background:BG, border:`1px solid ${BG3}`, borderRadius:"4px", color:TEXT, fontFamily:"Georgia,serif", fontSize:"16px", padding:"12px 14px", outline:"none", boxSizing:"border-box" };
   const labelStyle = { fontSize:"12px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"6px", display:"block" };
 
-  // VORSCHAU-SCREEN
+  const ResetDialog = () => (
+    <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}>
+      <div style={{ background:BG2, border:"1px solid #c0392b", borderRadius:"8px", padding:"36px 28px", maxWidth:"380px", width:"100%", fontFamily:"Georgia,serif", textAlign:"center" }}>
+        <div style={{ fontSize:"32px", marginBottom:"12px" }}>&#x1F504;</div>
+        <div style={{ fontSize:"18px", fontWeight:"bold", color:TEXT, marginBottom:"8px" }}>Bestellung zurücksetzen?</div>
+        <GoldDivider/>
+        <p style={{ color:TEXTMUT, fontSize:"14px", lineHeight:1.7, marginBottom:"24px" }}>Alle Plätze, Gerichte und die Tischnummer werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.</p>
+        <div style={{ display:"flex", gap:"12px" }}>
+          <button onClick={resetOrder} style={{ flex:1, background:"#c0392b", color:"#fff", border:"none", borderRadius:"4px", padding:"14px", fontFamily:"Georgia,serif", fontSize:"14px", fontWeight:"bold", cursor:"pointer", letterSpacing:"1px" }}>Ja, neu starten</button>
+          <button onClick={() => setShowResetConfirm(false)} style={{ flex:1, background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"14px", fontFamily:"Georgia,serif", fontSize:"14px", cursor:"pointer" }}>Abbrechen</button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (showPreview) {
     const preview = buildLines();
     const total = calcTotal();
     return (
       <div style={{ position:"fixed", inset:0, zIndex:100, background:BG, overflowY:"auto" }}>
+        {showResetConfirm && <ResetDialog />}
         <div style={{ width:"100%", maxWidth:"760px", margin:"0 auto", padding:"28px 24px 80px", boxSizing:"border-box", fontFamily:"Georgia,serif" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
             <div>
               <div style={{ fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase", color:GOLD, marginBottom:"2px" }}>Service-Modus</div>
-              <div style={{ fontSize:"20px", fontWeight:"bold", color:TEXT }}>Bon-Vorschau · Tisch {table}</div>
+              <div style={{ fontSize:"20px", fontWeight:"bold", color:TEXT }}>Bon-Vorschau - Tisch {table}</div>
             </div>
-            <button onClick={() => setShowPreview(false)} style={{ background:"none", border:`1px solid ${BG3}`, borderRadius:"4px", fontSize:"13px", color:TEXTMUT, cursor:"pointer", padding:"8px 14px", fontFamily:"Georgia,serif", letterSpacing:"1px" }}>← Bearbeiten</button>
+            <button onClick={() => setShowPreview(false)} style={{ background:"none", border:`1px solid ${BG3}`, borderRadius:"4px", fontSize:"13px", color:TEXTMUT, cursor:"pointer", padding:"8px 14px", fontFamily:"Georgia,serif", letterSpacing:"1px" }}>Bearbeiten</button>
           </div>
           <GoldDivider/>
           {preview.length === 0 && (
@@ -694,8 +711,8 @@ _${new Date().toLocaleString("de-DE")}_`;
                 <div key={i} style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", padding:"8px 0", borderBottom:`1px solid ${BG3}`, gap:"12px" }}>
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:"11px", letterSpacing:"1.5px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"2px" }}>{c.gangLabel}</div>
-                    <div style={{ fontSize:"14px", color:TEXT }}>{c.name}{c.varLabel ? ` – ${c.varLabel}` : ""}</div>
-                    {c.note && <div style={{ fontSize:"12px", color:GOLDLT, fontStyle:"italic", marginTop:"2px" }}>✎ {c.note}</div>}
+                    <div style={{ fontSize:"14px", color:TEXT }}>{c.name}{c.varLabel ? ` - ${c.varLabel}` : ""}</div>
+                    {c.note && <div style={{ fontSize:"12px", color:GOLDLT, fontStyle:"italic", marginTop:"2px" }}>{c.note}</div>}
                   </div>
                   <div style={{ fontWeight:"bold", color:GOLD, fontSize:"14px", whiteSpace:"nowrap" }}>{fmt(c.price)}</div>
                 </div>
@@ -708,17 +725,18 @@ _${new Date().toLocaleString("de-DE")}_`;
           </div>
           <GoldDivider/>
           <button onClick={sendOrder} style={{ width:"100%", background: sendStatus==="ok" ? "#2d6a2d" : sendStatus==="error" ? "#6a2d2d" : GOLD, color: sendStatus==="ok" || sendStatus==="error" ? TEXT : BG, border:"none", borderRadius:"4px", padding:"18px", fontSize:"16px", fontFamily:"Georgia,serif", letterSpacing:"2px", textTransform:"uppercase", fontWeight:"bold", cursor:"pointer", transition:"all .3s", marginBottom:"10px" }}>
-            {sendStatus==="sending" ? "⏳ Sende ..." : sendStatus==="ok" ? "✅ Bestellung gesendet!" : sendStatus==="error" ? "❌ Fehler – Einstellungen prüfen" : "📨 Jetzt abschicken"}
+            {sendStatus==="sending" ? "Sende ..." : sendStatus==="ok" ? "Bestellung gesendet!" : sendStatus==="error" ? "Fehler - Einstellungen prüfen" : "Jetzt abschicken"}
           </button>
-          <button onClick={() => setShowPreview(false)} style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"16px", fontFamily:"Georgia,serif", fontSize:"15px", cursor:"pointer", letterSpacing:"1px" }}>← Zurück zur Bearbeitung</button>
+          <button onClick={() => setShowPreview(false)} style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"16px", fontFamily:"Georgia,serif", fontSize:"15px", cursor:"pointer", letterSpacing:"1px", marginBottom:"10px" }}>Zurück zur Bearbeitung</button>
+          <button onClick={() => setShowResetConfirm(true)} style={{ width:"100%", background:"transparent", color:"#c0392b", border:"1px solid #c0392b", borderRadius:"4px", padding:"14px", fontFamily:"Georgia,serif", fontSize:"14px", cursor:"pointer", letterSpacing:"1px" }}>Neu starten</button>
         </div>
       </div>
     );
   }
 
-  // EINGABE-SCREEN
   return (
     <div style={{ position:"fixed", inset:0, zIndex:100, background:BG, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      {showResetConfirm && <ResetDialog />}
       <div style={{ width:"100%", maxWidth:"760px", margin:"0 auto", padding:"28px 24px 80px", boxSizing:"border-box", fontFamily:"Georgia,serif" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"6px" }}>
           <div>
@@ -727,19 +745,16 @@ _${new Date().toLocaleString("de-DE")}_`;
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
             {table ? <div style={{ background:`${GOLD}22`, border:`1px solid ${GOLD}`, borderRadius:"4px", padding:"6px 14px", color:GOLD, fontFamily:"Georgia,serif", fontSize:"14px", fontWeight:"bold" }}>Tisch {table}</div> : null}
-            <button onClick={onClose} style={{ background:"none", border:`1px solid ${BG3}`, borderRadius:"4px", fontSize:"20px", color:TEXTMUT, cursor:"pointer", padding:"4px 12px", lineHeight:1 }}>×</button>
+            <button onClick={onClose} style={{ background:"none", border:`1px solid ${BG3}`, borderRadius:"4px", fontSize:"20px", color:TEXTMUT, cursor:"pointer", padding:"4px 12px", lineHeight:1 }}>x</button>
           </div>
         </div>
         <GoldDivider/>
-
-        {/* LIVE GESAMTPREIS */}
         {calcTotal() > 0 && (
           <div style={{ background:`${GOLD}11`, border:`1px solid ${GOLD}44`, borderRadius:"4px", padding:"12px 18px", display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
             <div style={{ fontSize:"12px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT }}>Gesamtbetrag</div>
             <div style={{ fontSize:"20px", fontWeight:"bold", color:GOLD, fontFamily:"Georgia,serif" }}>{fmt(calcTotal())}</div>
           </div>
         )}
-
         <div style={{ marginBottom:"24px" }}>
           <label style={labelStyle}>Tischnummer</label>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:"10px" }}>
@@ -750,16 +765,14 @@ _${new Date().toLocaleString("de-DE")}_`;
             ))}
           </div>
         </div>
-
         {seats.map((seat, seatIdx) => (
           <div key={seat.id} style={{ background:BG2, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"18px", marginBottom:"16px" }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
               <div style={{ fontSize:"16px", fontWeight:"bold", color:GOLD, letterSpacing:"1px" }}>Platz {seat.id}</div>
               {seats.length > 1 && (
-                <button onClick={() => removeSeat(seatIdx)} style={{ background:"transparent", border:`1px solid ${BG3}`, color:TEXTMUT, borderRadius:"2px", padding:"4px 12px", fontSize:"13px", cursor:"pointer", fontFamily:"Georgia,serif" }}>× entfernen</button>
+                <button onClick={() => removeSeat(seatIdx)} style={{ background:"transparent", border:`1px solid ${BG3}`, color:TEXTMUT, borderRadius:"2px", padding:"4px 12px", fontSize:"13px", cursor:"pointer", fontFamily:"Georgia,serif" }}>entfernen</button>
               )}
             </div>
-
             {seat.courses.map((course, courseIdx) => {
               const gangLabel = GANG_CATS.find(g => g.id === course.catId)?.label || course.catId;
               const items = getItems(course.catId);
@@ -768,12 +781,12 @@ _${new Date().toLocaleString("de-DE")}_`;
                 <div key={courseIdx} style={{ background:BG, border:`1px solid ${BG3}`, borderRadius:"3px", padding:"12px 14px", marginBottom:"10px" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
                     <span style={{ fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:GOLDLT }}>{gangLabel}</span>
-                    <button onClick={() => removeCourse(seatIdx, courseIdx)} style={{ background:"transparent", border:"none", color:TEXTMUT, fontSize:"18px", cursor:"pointer", lineHeight:1 }}>×</button>
+                    <button onClick={() => removeCourse(seatIdx, courseIdx)} style={{ background:"transparent", border:"none", color:TEXTMUT, fontSize:"18px", cursor:"pointer", lineHeight:1 }}>x</button>
                   </div>
                   <div style={{ marginBottom:"8px" }}>
                     <select value={course.item || ""} onChange={e => updateCourse(seatIdx, courseIdx, { item: parseInt(e.target.value) || null, variant: 0 })}
                       style={{ ...fieldStyle, cursor:"pointer" }}>
-                      <option value="">– Gericht wählen –</option>
+                      <option value="">Gericht wählen</option>
                       {items.map(it => (
                         <option key={it.id} value={it.id}>{it.name?.de || it.name}</option>
                       ))}
@@ -784,20 +797,19 @@ _${new Date().toLocaleString("de-DE")}_`;
                       {selItem.variants.map((v, vi) => (
                         <button key={vi} onClick={() => updateCourse(seatIdx, courseIdx, { variant: vi })}
                           style={{ padding:"8px 12px", borderRadius:"4px", border:`1px solid ${course.variant===vi ? GOLD : BG3}`, background: course.variant===vi ? `${GOLD}22` : "transparent", color: course.variant===vi ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"13px", cursor:"pointer", transition:"all .2s" }}
-                        >{v.label?.de} · {fmt(v.price)}</button>
+                        >{v.label?.de} - {fmt(v.price)}</button>
                       ))}
                     </div>
                   )}
                   {course.item && (
                     <input type="text" value={course.note} onChange={e => updateCourse(seatIdx, courseIdx, { note: e.target.value })}
-                      placeholder="Sonderwunsch (optional) ..."
+                      placeholder="Sonderwunsch (optional)"
                       style={{ ...fieldStyle, fontStyle: course.note ? "normal" : "italic", fontSize:"15px" }}
                     />
                   )}
                 </div>
               );
             })}
-
             <div style={{ marginTop:"10px" }}>
               <div style={{ fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"8px" }}>Gang hinzufügen</div>
               <div style={{ display:"flex", gap:"8px", flexWrap:"wrap" }}>
@@ -810,26 +822,24 @@ _${new Date().toLocaleString("de-DE")}_`;
             </div>
           </div>
         ))}
-
         <button onClick={addSeat}
           style={{ width:"100%", background:"transparent", border:`1px dashed ${BG3}`, color:TEXTMUT, borderRadius:"4px", padding:"16px", fontFamily:"Georgia,serif", fontSize:"15px", cursor:"pointer", letterSpacing:"1px", marginBottom:"20px" }}
         >+ Weiteren Platz hinzufügen</button>
-
         <GoldDivider/>
-
         <button
           onClick={() => { if (!table) { setSendStatus("notable"); setTimeout(() => setSendStatus(""), 3000); return; } setShowPreview(true); }}
           style={{ width:"100%", background: sendStatus==="notable" ? "#6a3a2d" : GOLD, color: sendStatus==="notable" ? TEXT : BG, border:"none", borderRadius:"4px", padding:"18px", fontSize:"16px", fontFamily:"Georgia,serif", letterSpacing:"2px", textTransform:"uppercase", fontWeight:"bold", cursor:"pointer", transition:"all .3s", marginBottom:"10px" }}
         >
-          {sendStatus==="notable" ? "⚠️ Tisch wählen!" : "📄 Vorschau & Abschicken"}
+          {sendStatus==="notable" ? "Tisch wählen!" : "Vorschau und Abschicken"}
         </button>
-        <button onClick={onClose} style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"16px", fontFamily:"Georgia,serif", fontSize:"15px", cursor:"pointer", letterSpacing:"1px" }}>Schließen</button>
+        <button onClick={onClose} style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"16px", fontFamily:"Georgia,serif", fontSize:"15px", cursor:"pointer", letterSpacing:"1px", marginBottom:"10px" }}>Schliessen</button>
+        <button onClick={() => setShowResetConfirm(true)} style={{ width:"100%", background:"transparent", color:"#c0392b", border:"1px solid #c0392b", borderRadius:"4px", padding:"14px", fontFamily:"Georgia,serif", fontSize:"14px", cursor:"pointer", letterSpacing:"1px" }}>Neu starten</button>
       </div>
     </div>
   );
 };
 
-const LastOrderModal = ({ onClose }) => {
+  const LastOrderModal = ({ onClose }) => {
   const raw = localStorage.getItem("order_history");
   const history = raw ? JSON.parse(raw) : [];
   const [selected, setSelected] = React.useState(0);
@@ -1173,7 +1183,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             </button>
           </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 3.0</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 3.1</div>
         </div>
       </main>
 
