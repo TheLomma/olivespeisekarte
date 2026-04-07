@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v3.2";
+const VERSION = "v3.3";
 
   // ── MODUS-WAHL STARTSCREEN ────────────────────────────────────
   const SERVICE_PIN = "1234";
@@ -239,6 +239,29 @@ const VERSION = "v3.2";
       </div>
     );
   };
+
+  const TablePickerStart = ({ onSelect, onSkip }) => (
+    <div style={{ position:"fixed", inset:0, zIndex:200, background:BG, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"Georgia,serif", padding:"32px" }}>
+      <HopmannsLogo size={72}/>
+      <div style={{ marginTop:"24px", fontSize:"11px", letterSpacing:"5px", textTransform:"uppercase", color:GOLD }}>Willkommen</div>
+      <div style={{ marginTop:"6px", fontSize:"clamp(20px,4vw,26px)", fontWeight:"bold", letterSpacing:"4px", color:TEXT, textTransform:"uppercase" }}>Hopmanns Olive</div>
+      <GoldDivider/>
+      <div style={{ fontSize:"14px", color:TEXTMUT, marginBottom:"28px", textAlign:"center" }}>Bitte wählen Sie Ihren Tisch</div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:"12px", width:"100%", maxWidth:"340px", marginBottom:"20px" }}>
+        {[1,2,3,4,5,6,7,8,9,10].map(n => (
+          <button key={n} onClick={() => onSelect(n)}
+            style={{ padding:"18px 0", borderRadius:"2px", border:`1px solid ${GOLD}`, background:"transparent", color:GOLD, fontFamily:"Georgia,serif", fontSize:"18px", fontWeight:"bold", cursor:"pointer", transition:"all .2s" }}
+            onMouseEnter={e => { e.currentTarget.style.background = GOLD; e.currentTarget.style.color = BG; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = GOLD; }}
+          >{n}</button>
+        ))}
+      </div>
+      <button onClick={onSkip}
+        style={{ background:"transparent", border:`1px solid ${BG3}`, color:TEXTMUT, borderRadius:"2px", padding:"12px 32px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px" }}
+      >Ohne Tischnummer fortfahren</button>
+      <div style={{ marginTop:"32px", fontSize:"10px", color:TEXTMUT, opacity:0.4, letterSpacing:"1px" }}>{VERSION}</div>
+    </div>
+  );
 
   const ModeSelector = ({ onSelect }) => {
     const [showPin, setShowPin] = React.useState(false);
@@ -1015,6 +1038,7 @@ export default function App() {
 
   const [appMode, setAppMode] = useState(() => localStorage.getItem("app_mode") || null);
     const [showPinModal, setShowPinModal] = useState(false);
+    const [startTablePicked, setStartTablePicked] = useState(() => !!localStorage.getItem("tg_table"));
     const switchMode = (mode) => {
       if (mode === null) { localStorage.removeItem("app_mode"); } else { localStorage.setItem("app_mode", mode); }
       setAppMode(mode);
@@ -1160,7 +1184,13 @@ _${new Date().toLocaleString("de-DE")}_`;
     setOrderNote("");
   };
   const cat = CATEGORIES_DATA.find(c => c.id === activeCat);
-    if (!appMode) return <ModeSelector onSelect={switchMode} />;
+    if (!appMode) return <ModeSelector onSelect={(mode) => { switchMode(mode); if (mode === "gast") setStartTablePicked(false); }} />;
+    if (appMode === "gast" && !startTablePicked) return (
+      <TablePickerStart
+        onSelect={(n) => { localStorage.setItem("tg_table", n); setTableNumber(n); setStartTablePicked(true); }}
+        onSkip={() => setStartTablePicked(true)}
+      />
+    );
     if (appMode === "service") return (<div style={{ background:BG, minHeight:"100vh", fontFamily:"Georgia,'Times New Roman',serif", color:TEXT }}><ServiceMode onClose={() => switchMode(null)} /></div>);
 
   return (
@@ -1292,7 +1322,7 @@ _${new Date().toLocaleString("de-DE")}_`;
             </button>
           </div>
           <div style={{ marginTop:"16px", fontSize:"13px", color:TEXTMUT, letterSpacing:"1px" }}>Hopmanns Olive · Ziegeleiweg 1–3 · 40699 Erkrath · hopmannsolive.de</div>
-          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 3.1</div>
+          <div style={{ marginTop:"8px", fontSize:"10px", color:TEXTMUT, letterSpacing:"1px", opacity:0.4 }}>v 3.3</div>
         </div>
       </main>
 
