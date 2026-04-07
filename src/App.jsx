@@ -178,7 +178,39 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v3.1";
+const VERSION = "v3.2";
+
+  // ── MODUS-WAHL STARTSCREEN ────────────────────────────────────
+  const ModeSelector = ({ onSelect }) => (
+    <div style={{ position:"fixed", inset:0, zIndex:200, background:BG, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", fontFamily:"Georgia,serif", padding:"32px" }}>
+      <HopmannsLogo size={88}/>
+      <div style={{ marginTop:"28px", fontSize:"11px", letterSpacing:"5px", textTransform:"uppercase", color:GOLD }}>Willkommen</div>
+      <div style={{ marginTop:"8px", fontSize:"clamp(22px,5vw,30px)", fontWeight:"bold", letterSpacing:"4px", color:TEXT, textTransform:"uppercase" }}>Hopmanns Olive</div>
+      <GoldDivider/>
+      <div style={{ marginTop:"8px", fontSize:"13px", color:TEXTMUT, marginBottom:"36px", textAlign:"center", letterSpacing:"0.5px" }}>Bitte wählen Sie Ihren Modus</div>
+      <div style={{ display:"flex", flexDirection:"column", gap:"16px", width:"100%", maxWidth:"340px" }}>
+        <button
+          onClick={() => onSelect("gast")}
+          style={{ background:"transparent", border:`1px solid ${GOLD}`, borderRadius:"2px", padding:"20px 24px", cursor:"pointer", fontFamily:"Georgia,serif", textAlign:"left", transition:"all .2s" }}
+          onMouseEnter={e => { e.currentTarget.style.background = `${GOLD}18`; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+        >
+          <div style={{ fontSize:"13px", letterSpacing:"3px", textTransform:"uppercase", color:GOLD, marginBottom:"6px" }}>🍽 Gast-Modus</div>
+          <div style={{ fontSize:"13px", color:TEXTMUT, lineHeight:1.6 }}>Speisekarte ansehen & Bestellungen aufgeben</div>
+        </button>
+        <button
+          onClick={() => onSelect("service")}
+          style={{ background:"transparent", border:`1px solid ${BG3}`, borderRadius:"2px", padding:"20px 24px", cursor:"pointer", fontFamily:"Georgia,serif", textAlign:"left", transition:"all .2s" }}
+          onMouseEnter={e => { e.currentTarget.style.background = `${BG3}88`; }}
+          onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+        >
+          <div style={{ fontSize:"13px", letterSpacing:"3px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"6px" }}>👨‍🍳 Service-Modus</div>
+          <div style={{ fontSize:"13px", color:TEXTMUT, lineHeight:1.6 }}>Bestellungen für Tische & Plätze erfassen</div>
+        </button>
+      </div>
+      <div style={{ marginTop:"40px", fontSize:"10px", color:TEXTMUT, opacity:0.4, letterSpacing:"1px" }}>{VERSION}</div>
+    </div>
+  );
 
 const SAVE = "13. Juni 2026 – Großes Sommerfest · 25 Jahre Hopmanns Olive";
 
@@ -468,7 +500,7 @@ const TablePicker = ({ current, onSelect, onClose }) => (
   </div>
 );
 
-const TelegramSettings = ({ onClose, onOpenServiceMode }) => {
+const TelegramSettings = ({ onClose, onOpenServiceMode, onSwitchMode }) => {
   const [botToken, setBotToken] = useState(localStorage.getItem("tg_token") || "8556873591:AAEtuYkA6tO3i4W-AGbiQKDRL7mVk6Kah34");
   const [chatId, setChatId] = useState(localStorage.getItem("tg_chatid") || "8792112920");
   const [saved, setSaved] = useState(false);
@@ -594,7 +626,13 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
           onClick={() => { onClose(); onOpenServiceMode && onOpenServiceMode(); }}
           style={{ marginTop:"10px", width:"100%", background:"transparent", color:GOLD, border:`1px solid ${GOLD}`, borderRadius:"2px", padding:"11px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px" }}
         >
-          🍽 Service-Modus öffnen
+          🍽 Service-Modus wechseln
+        </button>
+        <button
+          onClick={() => { onClose(); onSwitchMode && onSwitchMode(null); }}
+          style={{ marginTop:"8px", width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"2px", padding:"11px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer", letterSpacing:"1px" }}
+        >
+          ↩ Zur Modus-Auswahl
         </button>
       </div>
     </div>
@@ -912,7 +950,12 @@ export default function App() {
     document.documentElement.style.width = '100%';
   }, []);
 
-  const [lang, setLang] = useState(localStorage.getItem("lang") || "de");
+  const [appMode, setAppMode] = useState(() => localStorage.getItem("app_mode") || null);
+    const switchMode = (mode) => {
+      if (mode === null) { localStorage.removeItem("app_mode"); } else { localStorage.setItem("app_mode", mode); }
+      setAppMode(mode);
+    };
+    const [lang, setLang] = useState(localStorage.getItem("lang") || "de");
   const toggleLang = () => {
     const next = lang === "de" ? "en" : "de";
     setLang(next);
@@ -994,7 +1037,7 @@ _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
     orderReceived:"Ihre Bestellung wurde aufgenommen. Wir kümmern uns sofort darum.",
     back:"Zurück zur Karte", addBtn:"+ Bestellen", perPerson:"p.P.",
     restaurant:"Genussrestaurant", menu:"Speisekarte",
-    version:"v3.0",
+    version:"v3.2",
     note:"Bei Unverträglichkeiten & Allergien sprechen Sie uns bitte an. Wir beraten Sie gerne. Preise enthalten die gesetzliche MwSt."
   };
 
@@ -1053,6 +1096,8 @@ _${new Date().toLocaleString("de-DE")}_`;
     setOrderNote("");
   };
   const cat = CATEGORIES_DATA.find(c => c.id === activeCat);
+    if (!appMode) return <ModeSelector onSelect={switchMode} />;
+    if (appMode === "service") return (<div style={{ background:BG, minHeight:"100vh", fontFamily:"Georgia,'Times New Roman',serif", color:TEXT }}><ServiceMode onClose={() => switchMode(null)} /></div>);
 
   return (
     <div style={{ background:BG, minHeight:"100vh", fontFamily:"Georgia,'Times New Roman',serif", color:TEXT }}>
@@ -1189,10 +1234,14 @@ _${new Date().toLocaleString("de-DE")}_`;
 
       {showCart && <Cart cart={cart} onRemove={removeFromCart} onChangeQty={changeQty} onClose={() => setShowCart(false)} onOrder={handleOrder} onNoteChange={setOrderNote} note={orderNote} ui={ui}/>}
       {showSuccess && <OrderSuccess onClose={() => setShowSuccess(false)} ui={ui}/>}
-      {showTgSettings && <TelegramSettings onOpenServiceMode={() => setShowServiceMode(true)} onClose={() => { setShowTgSettings(false); const t = parseInt(localStorage.getItem("tg_table")); if (t) setTableNumber(t); }}/>}
+      {showTgSettings && <TelegramSettings
+          onSwitchMode={(mode) => { setShowTgSettings(false); switchMode(mode); }}
+          onOpenServiceMode={() => { setShowTgSettings(false); switchMode("service"); }}
+          onClose={() => { setShowTgSettings(false); const tbl = parseInt(localStorage.getItem("tg_table")); if (tbl) setTableNumber(tbl); }}
+        />}
       {showTablePicker && <TablePicker current={tableNumber} onSelect={setTableNumber} onClose={() => setShowTablePicker(false)}/>}
       {showLastOrder && <LastOrderModal onClose={() => setShowLastOrder(false)} />}
-        {showServiceMode && <ServiceMode onClose={() => setShowServiceMode(false)} />}
+        {/* Service-Modus wird jetzt über appMode gesteuert, nicht mehr als Modal */}
     </div>
   );
 }
