@@ -178,7 +178,7 @@ const CATEGORIES_DATA = [
   },
 ];
 
-const VERSION = "v3.5";
+const VERSION = "v3.6";
 
   // ── MODUS-WAHL STARTSCREEN ────────────────────────────────────
   const SERVICE_PIN = "1234";
@@ -848,8 +848,9 @@ const ServiceMode = ({ onClose }) => {
   const [sendStatus, setSendStatus] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [getraenkeNotiz, setGetraenkeNotiz] = useState("");
 
-  const resetOrder = () => { setTable(""); setSeats([{ id: 1, courses: [] }]); setSendStatus(""); setShowPreview(false); setShowResetConfirm(false); };
+  const resetOrder = () => { setTable(""); setSeats([{ id: 1, courses: [] }]); setSendStatus(""); setShowPreview(false); setShowResetConfirm(false); setGetraenkeNotiz(""); };
   const addSeat = () => setSeats(prev => [...prev, { id: prev.length + 1, courses: [] }]);
   const removeSeat = idx => setSeats(prev => prev.filter((_, i) => i !== idx));
   const addCourse = (seatIdx, catId) => setSeats(prev => prev.map((s, i) => i !== seatIdx ? s : { ...s, courses: [...s.courses, { catId, item: null, variant: 0, note: "" }] }));
@@ -880,7 +881,9 @@ const ServiceMode = ({ onClose }) => {
     const chatId = localStorage.getItem("tg_chatid") || "";
     setSendStatus("sending");
     const total = calcTotal();
-    const textLines = buildLines().map(s => {
+    const getraenkeLine = getraenkeNotiz.trim() ? `
+🥂 Getränke: ${getraenkeNotiz.trim()}` : "";
+      const textLines = buildLines().map(s => {
       const cl = s.courses.map(c => `    [${c.gangLabel}] ${c.name}${c.varLabel ? " - " + c.varLabel : ""}${c.note ? " [" + c.note + "]" : ""} - ${fmt(c.price)}`).join("\n");
       return `Platz ${s.seat}:
 ${cl}`;
@@ -890,7 +893,9 @@ Gesamt: ${fmt(total)}
 
 ${textLines}
 
-${new Date().toLocaleString("de-DE")}`;
+${getraenkeLine}
+
+  ${new Date().toLocaleString("de-DE")}`;
     try {
       const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
@@ -936,7 +941,13 @@ ${new Date().toLocaleString("de-DE")}`;
             <button onClick={() => setShowPreview(false)} style={{ background:"none", border:`1px solid ${BG3}`, borderRadius:"4px", fontSize:"13px", color:TEXTMUT, cursor:"pointer", padding:"8px 14px", fontFamily:"Georgia,serif", letterSpacing:"1px" }}>Bearbeiten</button>
           </div>
           <GoldDivider/>
-          {preview.length === 0 && (
+          {getraenkeNotiz.trim() && (
+              <div style={{ background:BG2, border:`1px solid ${BG3}`, borderRadius:"4px", padding:"14px 18px", marginBottom:"16px" }}>
+                <div style={{ fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:GOLDLT, marginBottom:"6px" }}>🥂 Getränke-Notiz</div>
+                <div style={{ fontSize:"14px", color:TEXT }}>{getraenkeNotiz}</div>
+              </div>
+            )}
+            {preview.length === 0 && (
             <div style={{ color:TEXTMUT, fontStyle:"italic", textAlign:"center", padding:"32px 0" }}>Keine Gerichte ausgewählt.</div>
           )}
           {preview.map(s => (
@@ -1060,6 +1071,16 @@ ${new Date().toLocaleString("de-DE")}`;
         <button onClick={addSeat}
           style={{ width:"100%", background:"transparent", border:`1px dashed ${BG3}`, color:TEXTMUT, borderRadius:"4px", padding:"16px", fontFamily:"Georgia,serif", fontSize:"15px", cursor:"pointer", letterSpacing:"1px", marginBottom:"20px" }}
         >+ Weiteren Platz hinzufügen</button>
+          <div style={{ marginBottom:"20px", marginTop:"8px" }}>
+            <label style={labelStyle}>🥂 Getränke-Notiz</label>
+            <textarea
+              value={getraenkeNotiz}
+              onChange={e => setGetraenkeNotiz(e.target.value)}
+              placeholder="z.B. 2x Wasser, 1x Rotwein, 1x Bier ..."
+              rows={3}
+              style={{ width:"100%", background:BG, border:`1px solid ${BG3}`, borderRadius:"4px", color:TEXT, fontFamily:"Georgia,serif", fontSize:"15px", padding:"12px 14px", outline:"none", resize:"none", boxSizing:"border-box" }}
+            />
+          </div>
         <GoldDivider/>
         <button
           onClick={() => { if (!table) { setSendStatus("notable"); setTimeout(() => setSendStatus(""), 3000); return; } setShowPreview(true); }}
@@ -1187,27 +1208,39 @@ export default function App() {
   const [callStatus, setCallStatus] = useState("");
 
   const [billStatus, setBillStatus] = useState("");
+    const [showBillModal, setShowBillModal] = useState(false);
+    const [billZahlung, setBillZahlung] = useState("");
+    const [billAufteilung, setBillAufteilung] = useState("");
 
-  const requestBill = async () => {
-    if (!tableNumber) { setBillStatus("notable"); setTimeout(() => setBillStatus(""), 3000); return; }
-    setBillStatus("sending");
-    const token = localStorage.getItem("tg_token") || "";
-    const chatId = localStorage.getItem("tg_chatid") || "";
-    try {
-      const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: `💳 *Rechnungsanfrage*
+  const sendBill = async (zahlung, aufteilung) => {
+      setShowBillModal(false);
+      setBillStatus("sending");
+      const token = localStorage.getItem("tg_token") || "";
+      const chatId = localStorage.getItem("tg_chatid") || "";
+      try {
+        const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId, text: `💳 *Rechnungsanfrage*
 
-Tisch ${tableNumber} m\u00f6chte bitte zahlen!
+Tisch ${tableNumber} möchte bitte zahlen!
+💰 Zahlung: ${zahlung}
+👥 Aufteilung: ${aufteilung}
 
 _${new Date().toLocaleString("de-DE")}_`, parse_mode: "Markdown" }),
-      });
-      const json = await res.json();
-      setBillStatus(json.ok ? "ok" : "error");
-    } catch(e) { setBillStatus("error"); }
-    setTimeout(() => setBillStatus(""), 3000);
-  };
+        });
+        const json = await res.json();
+        setBillStatus(json.ok ? "ok" : "error");
+      } catch(e) { setBillStatus("error"); }
+      setTimeout(() => setBillStatus(""), 3000);
+    };
+
+    const requestBill = () => {
+      if (!tableNumber) { setBillStatus("notable"); setTimeout(() => setBillStatus(""), 3000); return; }
+      setShowBillModal(true);
+    };
+
+
 
   const callWaiter = async () => {
     if (!tableNumber) { setCallStatus("notable"); setTimeout(() => setCallStatus(""), 3000); return; }
@@ -1447,7 +1480,45 @@ _${new Date().toLocaleString("de-DE")}_`;
         />}
       {showTablePicker && <TablePicker current={tableNumber} onSelect={setTableNumber} onClose={() => setShowTablePicker(false)}/>}
       {showLastOrder && <LastOrderModal onClose={() => setShowLastOrder(false)} />}
-        {/* Service-Modus wird jetzt über appMode gesteuert, nicht mehr als Modal */}
+
+      {/* RECHNUNG MODAL */}
+      {showBillModal && (
+        <div style={{ position:"fixed", inset:0, zIndex:200, background:"rgba(0,0,0,0.88)", display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }} onClick={() => { setShowBillModal(false); setBillZahlung(""); setBillAufteilung(""); }}>
+          <div style={{ background:BG2, border:`1px solid ${GOLD}`, borderRadius:"4px", padding:"36px 32px", width:"90%", maxWidth:"400px", fontFamily:"Georgia,serif" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase", color:GOLD, marginBottom:"4px" }}>Tisch {tableNumber}</div>
+            <div style={{ fontSize:"22px", fontWeight:"bold", color:TEXT, marginBottom:"6px" }}>💳 Rechnung anfordern</div>
+            <GoldDivider/>
+            <div style={{ marginBottom:"22px" }}>
+              <div style={{ fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"10px" }}>Zahlungsart</div>
+              <div style={{ display:"flex", gap:"10px" }}>
+                {["Karte", "Bar"].map(opt => (
+                  <button key={opt} onClick={() => setBillZahlung(opt)}
+                    style={{ flex:1, padding:"12px", borderRadius:"2px", border:`1px solid ${billZahlung === opt ? GOLD : BG3}`, background: billZahlung === opt ? `${GOLD}22` : "transparent", color: billZahlung === opt ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"13px", cursor:"pointer", transition:"all .2s" }}
+                  >{opt === "Karte" ? "💳 Karte" : "💵 Bar"}</button>
+                ))}
+              </div>
+            </div>
+            <div style={{ marginBottom:"28px" }}>
+              <div style={{ fontSize:"11px", letterSpacing:"2px", textTransform:"uppercase", color:TEXTMUT, marginBottom:"10px" }}>Aufteilung</div>
+              <div style={{ display:"flex", gap:"10px" }}>
+                {["Zusammen", "Getrennt"].map(opt => (
+                  <button key={opt} onClick={() => setBillAufteilung(opt)}
+                    style={{ flex:1, padding:"12px", borderRadius:"2px", border:`1px solid ${billAufteilung === opt ? GOLD : BG3}`, background: billAufteilung === opt ? `${GOLD}22` : "transparent", color: billAufteilung === opt ? GOLD : TEXTMUT, fontFamily:"Georgia,serif", fontSize:"13px", cursor:"pointer", transition:"all .2s" }}
+                  >{opt === "Zusammen" ? "👥 Zusammen" : "🔀 Getrennt"}</button>
+                ))}
+              </div>
+            </div>
+            <button
+              onClick={() => { if (billZahlung && billAufteilung) sendBill(billZahlung, billAufteilung); }}
+              disabled={!billZahlung || !billAufteilung}
+              style={{ width:"100%", background:(billZahlung && billAufteilung) ? GOLD : BG3, color:(billZahlung && billAufteilung) ? BG : TEXTMUT, border:"none", borderRadius:"2px", padding:"14px", fontSize:"13px", fontFamily:"Georgia,serif", letterSpacing:"2px", textTransform:"uppercase", fontWeight:"bold", cursor:(billZahlung && billAufteilung) ? "pointer" : "default", transition:"all .3s", marginBottom:"10px" }}
+            >Rechnung anfordern</button>
+            <button onClick={() => { setShowBillModal(false); setBillZahlung(""); setBillAufteilung(""); }}
+              style={{ width:"100%", background:"transparent", color:TEXTMUT, border:`1px solid ${BG3}`, borderRadius:"2px", padding:"11px", fontFamily:"Georgia,serif", fontSize:"12px", cursor:"pointer" }}
+            >Abbrechen</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
